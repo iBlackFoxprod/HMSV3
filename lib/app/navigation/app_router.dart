@@ -19,7 +19,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
     initialLocation: AppRoutes.splash,
     debugLogDiagnostics: true, // Helpful for debugging routes
     redirect: (BuildContext context, GoRouterState state) {
-      final isLoggedIn = authState.asData?.value != null;
+      final isLoggedIn = authState.asDat3a?.value != null;
       final user = authState.asData?.value;
 
       // Define public routes that don't require login
@@ -65,11 +65,11 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         path: AppRoutes.patientHome,
         builder: (context, state) => const PatientHomeScreen(), // Create this screen
       ),
-      // TODO: Add route for EmployeeDashboardScreen
-      // GoRoute(
-      //   path: AppRoutes.employeeDashboard,
-      //   builder: (context, state) => const EmployeeDashboardScreen(),
-      // ),
+      // Employee dashboard route
+      GoRoute(
+        path: AppRoutes.employeeDashboard,
+        builder: (context, state) => const EmployeeDashboardScreen(),
+      ),
     ],
   );
 });
