@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "954833891310",
+    "project_id": "hmsv3-1e07b",
+    "storage_bucket": "hmsv3-1e07b.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:954833891310:android:358a8ee05dab4961a0e8ff",
+        "android_client_info": {
+          "package_name": "com.kartel.hmsv3"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBqXw8vV66j7GC2Wl1iOlXGOlZFnSmVVZk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
