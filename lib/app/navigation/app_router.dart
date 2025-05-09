@@ -19,7 +19,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
     initialLocation: AppRoutes.splash,
     debugLogDiagnostics: true, // Helpful for debugging routes
     redirect: (BuildContext context, GoRouterState state) {
-      final isLoggedIn = authState.asDat3a?.value != null;
+      final isLoggedIn = authState.asData?.value != null;
       final user = authState.asData?.value;
 
       // Define public routes that don't require login

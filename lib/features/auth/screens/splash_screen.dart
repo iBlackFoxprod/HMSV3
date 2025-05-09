@@ -13,39 +13,32 @@ class SplashScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Listen to auth state changes
-    // Note: Ensure UserModel is imported for AsyncValue<UserModel?> to work
-    ref.listen<AsyncValue<UserModel?>>(authStateChangesProvider, (_, state) { // UserModel? needs UserModel to be defined
+    ref.listen<AsyncValue<UserModel?>>(authStateChangesProvider, (_, state) {
       state.when(
         data: (user) {
-          if (user != null) {
-            // User is logged in, navigate based on role
-            if (user.role == UserRole.patient) {
-              context.go(AppRoutes.patientHome);
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (user != null) {
+              if (user.role == UserRole.patient) {
+                context.go(AppRoutes.patientHome);
+              } else {
+                context.go(AppRoutes.employeeDashboard);
+              }
             } else {
-              // TODO: Navigate to employee dashboard or other relevant screen
-              context.go(AppRoutes.employeeDashboard); // Placeholder
+              context.go(AppRoutes.login);
             }
-          } else {
-            // User is not logged in, navigate to login
-            Future.delayed(const Duration(seconds: 1), () {
-               context.go(AppRoutes.login);
-            });
-          }
+          });
         },
         loading: () {
-          // Loading state
+          // Optional: handle loading state if needed
         },
         error: (err, stack) {
-          print("Error in authStateChangesProvider on Splash: $err");
-          Future.delayed(const Duration(seconds: 1), () {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
             context.go(AppRoutes.login);
           });
         },
       );
     });
 
-    // Your splash screen UI
     return Scaffold(
       body: Center(
         child: Column(
