@@ -2,51 +2,54 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hmsv3/app/navigation/app_routes.dart';
-import 'package:hmsv3/core/models/user_model.dart'; // Ensure this is correct
-import 'package:hmsv3/core/enums/user_role_enum.dart'; // Ensure this is correct
+import 'package:hmsv3/core/models/user_model.dart';
+import 'package:hmsv3/core/enums/user_role_enum.dart';
 import 'package:hmsv3/features/auth/providers/auth_providers.dart';
 import 'package:hmsv3/features/auth/screens/login_screen.dart';
 import 'package:hmsv3/features/auth/screens/registration_screen.dart';
 import 'package:hmsv3/features/auth/screens/splash_screen.dart';
 import 'package:hmsv3/features/patient_portal/screens/patient_home_screen.dart';
-import 'package:hmsv3/features/employee_portal/screens/employee_dashboard_screen.dart'; // Placeholder screen
+import 'package:hmsv3/features/employee_portal/screens/employee_dashboard_screen.dart';
 
-// Provider for GoRouter
 final goRouterProvider = Provider<GoRouter>((ref) {
   final authState = ref.watch(authStateChangesProvider);
 
   return GoRouter(
     initialLocation: AppRoutes.splash,
-    debugLogDiagnostics: true, // Helpful for debugging routes
+    debugLogDiagnostics: true,
     redirect: (BuildContext context, GoRouterState state) {
-      final isLoggedIn = authState.asData?.value != null;
+      final location = state.matchedLocation;
+
+      // Wait for auth to finish loading before redirecting
+      if (authState.isLoading || authState.hasError) return null;
+
       final user = authState.asData?.value;
+      final isLoggedIn = user != null;
 
-      // Define public routes that don't require login
-      final publicRoutes = [AppRoutes.splash, AppRoutes.login, AppRoutes.register];
-      final isGoingToPublicRoute = publicRoutes.contains(state.matchedLocation);
+      final publicRoutes = {
+        AppRoutes.splash,
+        AppRoutes.login,
+        AppRoutes.register,
+      };
 
-      // If on splash screen, let it decide where to go (usually based on auth state)
-      if (state.matchedLocation == AppRoutes.splash) {
-        return null; // SplashScreen will handle its own redirection
+      final isPublicRoute = publicRoutes.contains(location);
+
+      // If on splash, let the SplashScreen decide where to go
+      if (location == AppRoutes.splash) return null;
+
+      // Not logged in and trying to access protected routes
+      if (!isLoggedIn && !isPublicRoute) {
+        return AppRoutes.login;
       }
 
-      // If user is not logged in and trying to access a protected route
-      if (!isLoggedIn && !isGoingToPublicRoute) {
-        return AppRoutes.login; // Redirect to login
+      // Logged in and trying to go to login or register
+      if (isLoggedIn && (location == AppRoutes.login || location == AppRoutes.register)) {
+        return user.role == UserRole.patient
+            ? AppRoutes.patientHome
+            : AppRoutes.employeeDashboard;
       }
 
-      // If user is logged in and tries to access login/register, redirect to home
-      if (isLoggedIn && (state.matchedLocation == AppRoutes.login || state.matchedLocation == AppRoutes.register)) {
-        // Redirect based on role if you have different home screens
-        if (user?.role == UserRole.patient) { // Ensure UserRole enum is accessible
-          return AppRoutes.patientHome;
-        } else {
-          // TODO: Redirect to employee dashboard or appropriate screen
-          return AppRoutes.employeeDashboard; // Placeholder
-        }
-      }
-      return null; // No redirection needed
+      return null; // no redirect
     },
     routes: [
       GoRoute(
@@ -63,9 +66,8 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: AppRoutes.patientHome,
-        builder: (context, state) => const PatientHomeScreen(), // Create this screen
+        builder: (context, state) => const PatientHomeScreen(),
       ),
-      // Employee dashboard route
       GoRoute(
         path: AppRoutes.employeeDashboard,
         builder: (context, state) => const EmployeeDashboardScreen(),

@@ -96,7 +96,7 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: <Widget>[
-                 Text(
+                Text(
                   'HEALTHLY!',
                   textAlign: TextAlign.center,
                   style: TextStyle(
@@ -152,7 +152,7 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
                   decoration: InputDecoration(
                     labelText: 'Confirm Password',
                     border: const OutlineInputBorder(),
-                     suffixIcon: IconButton(
+                    suffixIcon: IconButton(
                       icon: Icon(_obscureConfirmPassword ? Icons.visibility_off : Icons.visibility),
                       onPressed: _toggleConfirmPasswordVisibility,
                     ),
