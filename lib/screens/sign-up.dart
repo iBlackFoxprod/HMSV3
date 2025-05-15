@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
+import 'package:hmsv3/screens/login.dart';
 
 class SignUpPage extends StatefulWidget {
   const SignUpPage({super.key});
@@ -81,20 +82,31 @@ class _SignUpPageState extends State<SignUpPage> {
         // Update the display name in Firebase Auth profile
         await userCredential.user!.updateDisplayName(
             "${_firstNameController.text.trim()} ${_lastNameController.text.trim()}");
+            
+        // Sign out the user so they need to login with their credentials
+        await _auth.signOut();
 
         // Check if component is still mounted before updating UI
         if (mounted) {
           // Show success message
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Registration successful!'),
+              content: Text('Registration successful! Please log in with your new account.'),
               backgroundColor: Colors.green,
+              duration: Duration(seconds: 3),
             ),
           );
           
-          // Navigate to login page
-          Navigator.pushReplacementNamed(context, '/login');
+          // Navigate to login page after a short delay to ensure the snackbar is visible
+          Future.delayed(const Duration(milliseconds: 500), () {
+            if (mounted) {
+              Navigator.of(context).pushReplacementNamed('/login');
+            }
+          });
         }
+        
+        // Return early to avoid the finally block setting isLoading to false before navigation
+        return;
       }
     } on FirebaseAuthException catch (e) {
       String message;
@@ -119,22 +131,30 @@ class _SignUpPageState extends State<SignUpPage> {
           message = 'An error occurred: ${e.code}';
       }
       
-      setState(() {
-        _errorMessage = message;
-      });
+      if (mounted) {
+        setState(() {
+          _errorMessage = message;
+        });
+      }
       
     } on FirebaseException catch (e) {
       // Handle Firebase Realtime Database exceptions
-      setState(() {
-        _errorMessage = 'Database error: ${e.message}';
-      });
+      if (mounted) {
+        setState(() {
+          _errorMessage = 'Database error: ${e.message}';
+        });
+      }
+      
     } catch (e) {
       // Handle any other unexpected errors
-      setState(() {
-        _errorMessage = 'An unexpected error occurred. Please try again.';
-      });
+      if (mounted) {
+        setState(() {
+          _errorMessage = 'An unexpected error occurred. Please try again.';
+        });
+      }
+      
     } finally {
-      // Always set loading to false when done
+      // Always set loading to false when done (only in error cases, success case returns early)
       if (mounted) {
         setState(() {
           _isLoading = false;
@@ -413,7 +433,7 @@ class _SignUpPageState extends State<SignUpPage> {
                       ),
                       GestureDetector(
                         onTap: () {
-                          Navigator.pushReplacementNamed(context, '/login');
+                          Navigator.of(context).pushReplacementNamed('/login');
                         },
                         child: const Text(
                           'Login',
