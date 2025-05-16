@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_database/firebase_database.dart';
 
 void main() {
   runApp(const MaterialApp(
@@ -37,9 +39,9 @@ class _PatientNavScreenState extends State<PatientNavScreen> {
 
   final List<Widget> _pages = const [
     PatientHomePage(),
-    Placeholder(), 
-    Placeholder(), 
-    Placeholder(), 
+    Placeholder(),
+    Placeholder(),
+    Placeholder(),
   ];
 
   void _onItemTapped(int index) {
@@ -71,19 +73,49 @@ class _PatientNavScreenState extends State<PatientNavScreen> {
   }
 }
 
-// ---------------------- the patient home page -------------------
-class PatientHomePage extends StatelessWidget {
+// ---------------------- Patient Home Page -------------------
+class PatientHomePage extends StatefulWidget {
   const PatientHomePage({super.key});
 
   @override
+  State<PatientHomePage> createState() => _PatientHomePageState();
+}
+
+class _PatientHomePageState extends State<PatientHomePage> {
+  String? firstName;
+  final _auth = FirebaseAuth.instance;
+  final _dbRef = FirebaseDatabase.instance.reference();
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserFirstName();
+  }
+
+  void _loadUserFirstName() async {
+    final user = _auth.currentUser;
+    if (user != null) {
+      final snapshot = await _dbRef.child('users').child(user.uid).once();
+      final data = snapshot.snapshot.value as Map?;
+      if (data != null && data.containsKey('firstName')) {
+        setState(() {
+          firstName = data['firstName'];
+        });
+      }
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final greetingName = firstName ?? '...';
+
     final List<Doctor> topDoctors = [
       Doctor(
-        name: 'Dr. Aloshy saadaoui',
+        name: 'Dr. Aloshy Saadaoui',
         specialty: 'Pediatrician',
         patients: '345+',
         imagePath: 'assets/images/doctor1.jpg',
-        description: 'Dr. Michael Reeve is a top pediatrician at Crist Hospital in London.',
+        description: 'Dr. Aloshy is a top pediatrician at Crist Hospital in London.',
       ),
       Doctor(
         name: 'Dr. Salim Aït Benali',
@@ -97,14 +129,13 @@ class PatientHomePage extends StatelessWidget {
         specialty: 'Cardiologist',
         patients: '410+',
         imagePath: 'assets/images/doctor3.jpg',
-        description: 'Dr. Charlotte is a top heart specialist in Londons Crist Hospital.',
+        description: 'Dr. Charlotte is a top heart specialist in London\'s Crist Hospital.',
       ),
     ];
 
     return SafeArea(
       child: Column(
         children: [
-          // Header with logo and back button
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
             color: Colors.black87,
@@ -112,11 +143,13 @@ class PatientHomePage extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 _buildHealthifyLogo(),
-                const Icon(Icons.arrow_back, color: Colors.white),
+                GestureDetector(
+                  onTap: () => Navigator.pop(context),
+                  child: const Icon(Icons.arrow_back, color: Colors.white),
+                ),
               ],
             ),
           ),
-          // Main content in white card
           Expanded(
             child: Container(
               decoration: const BoxDecoration(
@@ -129,7 +162,6 @@ class PatientHomePage extends StatelessWidget {
               child: ListView(
                 padding: EdgeInsets.zero,
                 children: [
-                  // Greeting
                   Padding(
                     padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
                     child: Row(
@@ -140,13 +172,13 @@ class PatientHomePage extends StatelessWidget {
                         ),
                         const SizedBox(width: 12),
                         RichText(
-                          text: const TextSpan(
-                            style: TextStyle(fontSize: 16, color: Colors.black87),
+                          text: TextSpan(
+                            style: const TextStyle(fontSize: 16, color: Colors.black87),
                             children: [
-                              TextSpan(text: 'Hello '),
+                              const TextSpan(text: 'Hello '),
                               TextSpan(
-                                text: 'Paddy!',
-                                style: TextStyle(fontWeight: FontWeight.bold),
+                                text: '$greetingName!',
+                                style: const TextStyle(fontWeight: FontWeight.bold),
                               ),
                             ],
                           ),
@@ -155,10 +187,8 @@ class PatientHomePage extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 20),
-                  // Menu buttons
                   _buildMenuContainer(),
                   const SizedBox(height: 24),
-                  // Top doctors section
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 20),
                     child: Column(
@@ -173,21 +203,21 @@ class PatientHomePage extends StatelessWidget {
                         ),
                         const SizedBox(height: 16),
                         ...topDoctors.map((doctor) => GestureDetector(
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => DoctorDetailPage(doctor: doctor),
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => DoctorDetailPage(doctor: doctor),
+                                  ),
+                                );
+                              },
+                              child: _DoctorCard(
+                                name: doctor.name,
+                                specialty: doctor.specialty,
+                                patients: doctor.patients,
+                                imagePath: doctor.imagePath,
                               ),
-                            );
-                          },
-                          child: _DoctorCard(
-                            name: doctor.name,
-                            specialty: doctor.specialty,
-                            patients: doctor.patients,
-                            imagePath: doctor.imagePath,
-                          ),
-                        )),
+                            )),
                       ],
                     ),
                   ),
@@ -328,7 +358,6 @@ class _DoctorCard extends StatelessWidget {
         padding: const EdgeInsets.all(12.0),
         child: Row(
           children: [
-            // Doctor image
             ClipRRect(
               borderRadius: BorderRadius.circular(12),
               child: Image.asset(
@@ -339,7 +368,6 @@ class _DoctorCard extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 12),
-            // Doctor info
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -388,7 +416,7 @@ class _DoctorCard extends StatelessWidget {
   }
 }
 
-// ---------------------- the detailed page of the doctor -------------------
+// ---------------------- Doctor Detail Page -------------------
 class DoctorDetailPage extends StatelessWidget {
   final Doctor doctor;
 
@@ -401,7 +429,6 @@ class DoctorDetailPage extends StatelessWidget {
       body: SafeArea(
         child: Column(
           children: [
-            // Header
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
               color: Colors.black87,
@@ -420,12 +447,10 @@ class DoctorDetailPage extends StatelessWidget {
                       fontSize: 16,
                     ),
                   ),
-                  const SizedBox(width: 24), // spacing for symmetry
+                  const SizedBox(width: 24),
                 ],
               ),
             ),
-
-            // Main white card
             Expanded(
               child: Container(
                 width: double.infinity,
@@ -440,7 +465,6 @@ class DoctorDetailPage extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    // Doctor image
                     ClipRRect(
                       borderRadius: BorderRadius.circular(16),
                       child: Image.asset(
@@ -451,7 +475,6 @@ class DoctorDetailPage extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 16),
-                    // Name and specialty
                     Text(
                       doctor.name,
                       style: const TextStyle(
@@ -468,7 +491,6 @@ class DoctorDetailPage extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 16),
-                    // Patients
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
@@ -481,7 +503,6 @@ class DoctorDetailPage extends StatelessWidget {
                       ],
                     ),
                     const SizedBox(height: 24),
-                    // Description
                     Text(
                       doctor.description,
                       textAlign: TextAlign.center,
@@ -492,7 +513,6 @@ class DoctorDetailPage extends StatelessWidget {
                       ),
                     ),
                     const Spacer(),
-                    // Book button
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
