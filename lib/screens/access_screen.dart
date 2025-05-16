@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import '../main.dart'; // For going back to the splash screen
+import 'access_screen.dart'; // For going back to the splash screen
 import 'login.dart'; // Make sure this file has LoginPage
 import 'sign-up.dart'; // Make sure this file has SignUpPage
 
 class AccessScreen extends StatelessWidget {
-  const AccessScreen({super.key});
+  const AccessScreen({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -47,7 +47,7 @@ class AccessScreen extends StatelessWidget {
                     );
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Color(0xff3E69FE),
+                    backgroundColor: const Color(0xff3E69FE),
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 12),
                     shape: const StadiumBorder(),
@@ -63,7 +63,7 @@ class AccessScreen extends StatelessWidget {
                     );
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Color(0xff3E69FE),
+                    backgroundColor: const Color(0xff3E69FE),
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 12),
                     shape: const StadiumBorder(),
@@ -78,9 +78,10 @@ class AccessScreen extends StatelessWidget {
               onPressed: () {
                 Navigator.pushReplacement(
                   context,
-                  MaterialPageRoute(builder: (_) => const SplashScreen()),
+                  MaterialPageRoute(builder: (_) => const AccessScreen()),
                 );
               },
+              
             ),
           ],
         ),
