@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:hmsv3/patient/patient_home.dart';
+import 'package:hmsv3/staff/staff_dashboard.dart';
+import 'package:hmsv3/superadmin/super_admin_dashboard.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -20,6 +22,7 @@ class _LoginPageState extends State<LoginPage> {
 
   // Firebase instance
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  final DatabaseReference _db = FirebaseDatabase.instance.ref();
 
   @override
   void dispose() {
@@ -49,21 +52,52 @@ class _LoginPageState extends State<LoginPage> {
 
         // Check if user exists and is logged in
         if (userCredential.user != null) {
-          if (mounted) {
-            // Navigate to PatientHome screen on successful login
-            Navigator.of(context).pushAndRemoveUntil(
-              MaterialPageRoute(builder: (_) => const PatientHomePage()),
-              (route) => false,
-            );
+          final User user = userCredential.user!;
+          
+          // Get user data from the database to check role
+          final snapshot = await _db.child('users').child(user.uid).get();
+          
+          if (snapshot.exists) {
+            final userData = snapshot.value as Map<dynamic, dynamic>;
+            final String userRole = userData['role'] ?? 'Patient';
+            
+            if (mounted) {
+              // Navigate based on user role
+              switch (userRole) {
+                case 'SuperAdmin':
+                  Navigator.of(context).pushAndRemoveUntil(
+                    MaterialPageRoute(builder: (_) => const SuperAdminDashboard()),
+                    (route) => false,
+                  );
+                  break;
+                case 'Staff':
+                  Navigator.of(context).pushAndRemoveUntil(
+                    MaterialPageRoute(builder: (_) => const StaffDashboard()),
+                    (route) => false,
+                  );
+                  break;
+                case 'Patient':
+                default:
+                  Navigator.of(context).pushAndRemoveUntil(
+                    MaterialPageRoute(builder: (_) => const PatientHomePage()),
+                    (route) => false,
+                  );
+                  break;
+              }
 
-            // Show success message after navigation is triggered
-            Future.delayed(const Duration(milliseconds: 500), () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Login successful!'),
-                  backgroundColor: Colors.green,
-                ),
-              );
+              // Show success message after navigation is triggered
+              Future.delayed(const Duration(milliseconds: 500), () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Login successful!'),
+                    backgroundColor: Colors.green,
+                  ),
+                );
+              });
+            }
+          } else {
+            setState(() {
+              _errorMessage = 'User profile not found. Please contact support.';
             });
           }
         }
