@@ -1,15 +1,30 @@
+// Combined Flutter File: Patient Portal Home with Navigation and Top Doctors
+
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hmsv3/features/auth/providers/auth_providers.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:curved_navigation_bar/curved_navigation_bar.dart';
+
+// Color palette
+const Color kPrimaryColor = Color(0xFF384B70);
+const Color kSecondaryColor = Color(0xFF507687);
+const Color kBackgroundColor = Color(0xFFFCFAEE);
+const Color kAccentColor = Color(0xFFB8001F);
 
 void main() {
-  runApp(const MaterialApp(
-    debugShowCheckedModeBanner: false,
-    home: PatientNavScreen(),
-  ));
+  runApp(
+    const ProviderScope(
+      child: MaterialApp(
+        debugShowCheckedModeBanner: false,
+        home: PatientNavScreen(),
+      ),
+    ),
+  );
 }
 
-// ---------------------- doctor ------------------------
 class Doctor {
   final String name;
   final String specialty;
@@ -26,7 +41,6 @@ class Doctor {
   });
 }
 
-// ---------------------- navigation -------------------
 class PatientNavScreen extends StatefulWidget {
   const PatientNavScreen({super.key});
 
@@ -35,53 +49,340 @@ class PatientNavScreen extends StatefulWidget {
 }
 
 class _PatientNavScreenState extends State<PatientNavScreen> {
-  int _selectedIndex = 0;
+  int _page = 0;
+  final GlobalKey<CurvedNavigationBarState> _bottomNavigationKey = GlobalKey();
 
-  final List<Widget> _pages = const [
-    PatientHomePage(),
-    Placeholder(),
-    Placeholder(),
-    Placeholder(),
-  ];
-
-  void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
+  late final List<Widget> _pages;
+  
+  @override
+  void initState() {
+    super.initState();
+    _pages = [
+      const PatientHomePage(),
+      const AppointmentsScreen(),
+      const FavoritesScreen(),
+      const ProfileScreen(),
+    ];
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black87,
-      body: _pages[_selectedIndex],
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _selectedIndex,
-        selectedItemColor: const Color(0xff3E69FE),
-        unselectedItemColor: Colors.grey,
-        backgroundColor: Colors.black,
-        onTap: _onItemTapped,
-        type: BottomNavigationBarType.fixed,
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: ''),
-          BottomNavigationBarItem(icon: Icon(Icons.calendar_today), label: ''),
-          BottomNavigationBarItem(icon: Icon(Icons.favorite_border), label: ''),
-          BottomNavigationBarItem(icon: Icon(Icons.person_outline), label: ''),
+      backgroundColor: kBackgroundColor,
+      bottomNavigationBar: CurvedNavigationBar(
+        key: _bottomNavigationKey,
+        backgroundColor: kBackgroundColor,
+        color: kPrimaryColor,
+        buttonBackgroundColor: kAccentColor,
+        height: 60,
+        animationDuration: const Duration(milliseconds: 300),
+        items: const <Widget>[
+          Icon(Icons.home, size: 30, color: Colors.white),
+          Icon(Icons.calendar_today, size: 30, color: Colors.white),
+          Icon(Icons.favorite_border, size: 30, color: Colors.white),
+          Icon(Icons.person_outline, size: 30, color: Colors.white),
+        ],
+        index: _page,
+        onTap: (index) {
+          setState(() {
+            _page = index;
+          });
+        },
+      ),
+      body: _pages[_page],
+    );
+  }
+}
+
+// Profile Screen Implementation
+class ProfileScreen extends ConsumerStatefulWidget {
+  const ProfileScreen({super.key});
+
+  @override
+  ConsumerState<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends ConsumerState<ProfileScreen> {
+  String? firstName;
+  String? lastName;
+  String? email;
+  String? phoneNumber;
+  final _auth = FirebaseAuth.instance;
+  final _dbRef = FirebaseDatabase.instance.reference();
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserData();
+  }
+
+  void _loadUserData() async {
+    final user = _auth.currentUser;
+    if (user != null) {
+      final snapshot = await _dbRef.child('users').child(user.uid).once();
+      final data = snapshot.snapshot.value as Map?;
+      if (data != null) {
+        setState(() {
+          firstName = data['firstName'];
+          lastName = data['lastName'];
+          email = user.email;
+          phoneNumber = data['phoneNumber'] ?? 'Not provided';
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final authController = ref.read(authControllerProvider.notifier);
+    final userAsyncValue = ref.watch(authStateChangesProvider);
+
+    return SafeArea(
+      child: userAsyncValue.when(
+        data: (user) => Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+              color: Colors.black87,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    "MY PROFILE", 
+                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.logout, color: Colors.white),
+                                onPressed: () {
+              Navigator.pushReplacementNamed(context, '/login');
+            },
+                  )
+                ],
+              ),
+            ),
+            Expanded(
+              child: Container(
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(24),
+                    topRight: Radius.circular(24),
+                  ),
+                ),
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      const SizedBox(height: 20),
+                      const CircleAvatar(
+                        radius: 60,
+                        backgroundImage: AssetImage('assets/images/user.jpg'),
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        "${firstName ?? '...'} ${lastName ?? '...'}",
+                        style: const TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      const Text(
+                        "Patient ID: #56789",
+                        style: TextStyle(
+                          color: Colors.grey,
+                        ),
+                      ),
+                      const SizedBox(height: 32),
+                      _buildProfileInfoCard(),
+                      const SizedBox(height: 24),
+                      _buildProfileMenuItems(),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (e, stack) => Center(child: Text('Error: $e')),
+      ),
+    );
+  }
+
+  Widget _buildProfileInfoCard() {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            _buildInfoRow(Icons.email, "Email", email ?? "Loading..."),
+            const Divider(),
+            _buildInfoRow(Icons.phone, "Phone", phoneNumber ?? "Loading..."),
+            const Divider(),
+            _buildInfoRow(Icons.calendar_today, "Date of Birth", "01/01/1990"),
+            const Divider(),
+            _buildInfoRow(Icons.bloodtype, "Blood Type", "O+"),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInfoRow(IconData icon, String title, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        children: [
+          Icon(icon, color: Colors.blue, size: 20),
+          const SizedBox(width: 16),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: const TextStyle(
+                  color: Colors.grey,
+                  fontSize: 12,
+                ),
+              ),
+              Text(
+                value,
+                style: const TextStyle(
+                  fontSize: 16,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildProfileMenuItems() {
+    return Column(
+      children: [
+        _buildMenuItem(Icons.edit, "Edit Profile", () {}),
+        _buildMenuItem(Icons.history, "Medical History", () {}),
+        _buildMenuItem(Icons.settings, "Settings", () {}),
+        _buildMenuItem(Icons.help_outline, "Help & Support", () {}),
+      ],
+    );
+  }
+
+  Widget _buildMenuItem(IconData icon, String title, VoidCallback onTap) {
+    return ListTile(
+      leading: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: Colors.blue.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Icon(icon, color: Colors.blue),
+      ),
+      title: Text(title),
+      trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+      onTap: onTap,
+    );
+  }
+}
+
+// Placeholder screens for other tabs
+class AppointmentsScreen extends StatelessWidget {
+  const AppointmentsScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+            color: Colors.black87,
+            child: const Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  "APPOINTMENTS", 
+                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)
+                ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: Container(
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(24),
+                  topRight: Radius.circular(24),
+                ),
+              ),
+              child: const Center(
+                child: Text("Appointments Coming Soon"),
+              ),
+            ),
+          ),
         ],
       ),
     );
   }
 }
 
-// ---------------------- Patient Home Page -------------------
-class PatientHomePage extends StatefulWidget {
+class FavoritesScreen extends StatelessWidget {
+  const FavoritesScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+            color: Colors.black87,
+            child: const Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  "FAVORITES", 
+                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)
+                ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: Container(
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(24),
+                  topRight: Radius.circular(24),
+                ),
+              ),
+              child: const Center(
+                child: Text("Favorites Coming Soon"),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class PatientHomePage extends ConsumerStatefulWidget {
   const PatientHomePage({super.key});
 
   @override
-  State<PatientHomePage> createState() => _PatientHomePageState();
+  ConsumerState<PatientHomePage> createState() => _PatientHomePageState();
 }
 
-class _PatientHomePageState extends State<PatientHomePage> {
+class _PatientHomePageState extends ConsumerState<PatientHomePage> {
   String? firstName;
   final _auth = FirebaseAuth.instance;
   final _dbRef = FirebaseDatabase.instance.reference();
@@ -108,6 +409,8 @@ class _PatientHomePageState extends State<PatientHomePage> {
   @override
   Widget build(BuildContext context) {
     final greetingName = firstName ?? '...';
+    final authController = ref.read(authControllerProvider.notifier);
+    final userAsyncValue = ref.watch(authStateChangesProvider);
 
     final List<Doctor> topDoctors = [
       Doctor(
@@ -118,11 +421,11 @@ class _PatientHomePageState extends State<PatientHomePage> {
         description: 'Dr. Aloshy is a top pediatrician at Crist Hospital in London.',
       ),
       Doctor(
-        name: 'Dr. Salim Aït Benali',
+        name: 'Dr. Nathaniel Detwat',
         specialty: 'Dermatologist',
-        patients: '290+',
+        patients: '269+',
         imagePath: 'assets/images/doctor2.jpg',
-        description: 'Dr. Salim specializes in skincare and dermatological treatments.',
+        description: 'Dr. Nathaniel specializes in skincare and dermatological treatments.',
       ),
       Doctor(
         name: 'Dr. Charlotte Baker',
@@ -134,98 +437,88 @@ class _PatientHomePageState extends State<PatientHomePage> {
     ];
 
     return SafeArea(
-      child: Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
-            color: Colors.black87,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                _buildHealthifyLogo(),
-                GestureDetector(
-                  onTap: () => Navigator.pop(context),
-                  child: const Icon(Icons.arrow_back, color: Colors.white),
-                ),
-              ],
-            ),
-          ),
-          Expanded(
-            child: Container(
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(24),
-                  topRight: Radius.circular(24),
-                ),
-              ),
-              child: ListView(
-                padding: EdgeInsets.zero,
+      child: userAsyncValue.when(
+        data: (user) => Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+              color: Colors.black87,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
-                    child: Row(
-                      children: [
-                        const CircleAvatar(
-                          backgroundImage: AssetImage('assets/images/user.jpg'),
-                          radius: 20,
-                        ),
-                        const SizedBox(width: 12),
-                        RichText(
-                          text: TextSpan(
-                            style: const TextStyle(fontSize: 16, color: Colors.black87),
-                            children: [
-                              const TextSpan(text: 'Hello '),
-                              TextSpan(
-                                text: '$greetingName!',
-                                style: const TextStyle(fontWeight: FontWeight.bold),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  _buildMenuContainer(),
-                  const SizedBox(height: 24),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          "Top Doctors",
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        ...topDoctors.map((doctor) => GestureDetector(
-                              onTap: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (_) => DoctorDetailPage(doctor: doctor),
-                                  ),
-                                );
-                              },
-                              child: _DoctorCard(
-                                name: doctor.name,
-                                specialty: doctor.specialty,
-                                patients: doctor.patients,
-                                imagePath: doctor.imagePath,
-                              ),
-                            )),
-                      ],
-                    ),
-                  ),
+                  _buildHealthifyLogo(),
+                  IconButton(
+                    icon: const Icon(Icons.logout, color: Colors.white),
+                                onPressed: () {
+              Navigator.pushReplacementNamed(context, '/login');
+            },
+                  )
                 ],
               ),
             ),
-          ),
-        ],
+            Expanded(
+              child: Container(
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(24),
+                    topRight: Radius.circular(24),
+                  ),
+                ),
+                child: ListView(
+                  padding: EdgeInsets.zero,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+                      child: Row(
+                        children: [
+                          const CircleAvatar(
+                            backgroundImage: AssetImage('assets/images/user.jpg'),
+                            radius: 20,
+                          ),
+                          const SizedBox(width: 12),
+                          RichText(
+                            text: TextSpan(
+                              style: const TextStyle(fontSize: 16, color: Colors.black87),
+                              children: [
+                                const TextSpan(text: 'Hello '),
+                                TextSpan(
+                                  text: '$greetingName!',
+                                  style: const TextStyle(fontWeight: FontWeight.bold),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text("Top Doctors", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                          const SizedBox(height: 16),
+                          ...topDoctors.map(
+                            (doctor) => _DoctorCard(
+                              name: doctor.name,
+                              specialty: doctor.specialty,
+                              patients: doctor.patients,
+                              imagePath: doctor.imagePath,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (e, stack) => Center(child: Text('Error: $e')),
       ),
     );
   }
@@ -235,309 +528,217 @@ class _PatientHomePageState extends State<PatientHomePage> {
       children: [
         Container(
           padding: const EdgeInsets.all(4),
-          decoration: BoxDecoration(
-            color: Colors.red,
-            borderRadius: BorderRadius.circular(6),
-          ),
-          child: const Icon(
-            Icons.favorite,
-            color: Colors.white,
-            size: 14,
-          ),
+          decoration: BoxDecoration(color: Colors.red, borderRadius: BorderRadius.circular(6)),
+          child: const Icon(Icons.favorite, color: Colors.white, size: 14),
         ),
         const SizedBox(width: 6),
-        const Text(
-          "HEALTHIFY",
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-            fontSize: 14,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildMenuContainer() {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20),
-      padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 24),
-      decoration: BoxDecoration(
-        border: Border.all(color: Colors.blue.shade300, width: 1.5),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: const [
-          _HomeMenuButton(
-            icon: Icons.medical_services,
-            iconColor: Colors.red,
-            label: 'Doctors',
-          ),
-          _HomeMenuButton(
-            icon: Icons.local_pharmacy,
-            iconColor: Colors.blue,
-            label: 'Pharmacy',
-          ),
-          _HomeMenuButton(
-            icon: Icons.receipt,
-            iconColor: Colors.green,
-            label: 'Billing',
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _HomeMenuButton extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final Color iconColor;
-
-  const _HomeMenuButton({
-    required this.icon,
-    required this.label,
-    required this.iconColor,w
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(
-            color: iconColor.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Icon(icon, color: iconColor, size: 28),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
+        const Text("HEALTHIFY", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
       ],
     );
   }
 }
 
 class _DoctorCard extends StatelessWidget {
-  final String name;
-  final String specialty;
-  final String patients;
-  final String imagePath;
+  final String name, specialty, patients, imagePath;
 
-  const _DoctorCard({
-    required this.name,
-    required this.specialty,
-    required this.patients,
-    required this.imagePath,
-  });
+  const _DoctorCard({required this.name, required this.specialty, required this.patients, required this.imagePath});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.shade200,
-            blurRadius: 5,
-            offset: const Offset(0, 2),
+    return GestureDetector(
+      onTap: () {
+        showModalBottomSheet(
+          context: context,
+          shape: const RoundedRectangleBorder(
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
           ),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(12.0),
-        child: Row(
-          children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: Image.asset(
-                imagePath,
-                width: 65,
-                height: 65,
-                fit: BoxFit.cover,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    name,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    specialty,
-                    style: const TextStyle(
-                      color: Colors.grey,
-                      fontSize: 14,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      const Icon(
-                        Icons.person,
-                        color: Colors.blue,
-                        size: 16,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        'Patients $patients',
-                        style: const TextStyle(
-                          fontSize: 13,
-                          color: Colors.grey,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ],
+          isScrollControlled: true,
+          builder: (context) => BookingModal(
+            doctorName: name,
+            specialty: specialty,
+            imagePath: imagePath,
+          ),
+        );
+      },
+      child: Card(
+        margin: const EdgeInsets.symmetric(vertical: 8),
+        elevation: 4,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        color: Colors.white,
+        child: ListTile(
+          leading: CircleAvatar(
+            backgroundImage: AssetImage(imagePath),
+            radius: 28,
+            backgroundColor: kSecondaryColor.withOpacity(0.1),
+          ),
+          title: Text(name, style: const TextStyle(fontWeight: FontWeight.bold, color: kPrimaryColor)),
+          subtitle: Text(specialty, style: const TextStyle(color: kSecondaryColor)),
+          trailing: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.people, color: kAccentColor, size: 18),
+              Text(patients, style: const TextStyle(fontSize: 12, color: kPrimaryColor)),
+            ],
+          ),
         ),
       ),
     );
   }
 }
 
-// ---------------------- Doctor Detail Page -------------------
-class DoctorDetailPage extends StatelessWidget {
-  final Doctor doctor;
+// Booking Modal Widget
+class BookingModal extends StatefulWidget {
+  final String doctorName;
+  final String specialty;
+  final String imagePath;
 
-  const DoctorDetailPage({super.key, required this.doctor});
+  const BookingModal({super.key, required this.doctorName, required this.specialty, required this.imagePath});
+
+  @override
+  State<BookingModal> createState() => _BookingModalState();
+}
+
+class _BookingModalState extends State<BookingModal> {
+  DateTime? selectedDate;
+  TimeOfDay? selectedTime;
+  bool isBooking = false;
+  final _firestore = FirebaseFirestore.instance;
+  final _auth = FirebaseAuth.instance;
+
+  Future<void> _pickDate() async {
+    final now = DateTime.now();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: now,
+      firstDate: now,
+      lastDate: now.add(const Duration(days: 60)),
+    );
+    if (picked != null) {
+      setState(() => selectedDate = picked);
+    }
+  }
+
+  Future<void> _pickTime() async {
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.now(),
+    );
+    if (picked != null) {
+      setState(() => selectedTime = picked);
+    }
+  }
+
+  void _bookAppointment() async {
+    if (selectedDate == null || selectedTime == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select date and time.')),
+      );
+      return;
+    }
+    setState(() => isBooking = true);
+    final user = _auth.currentUser;
+    if (user != null) {
+      await _firestore.collection('appointments').add({
+        'doctorName': widget.doctorName,
+        'specialty': widget.specialty,
+        'date': selectedDate!.toIso8601String(),
+        'time': '${selectedTime!.hour}:${selectedTime!.minute}',
+        'userId': user.uid,
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+    }
+    setState(() => isBooking = false);
+    Navigator.pop(context);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Appointment booked with ${widget.doctorName}!')),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.black87,
-      body: SafeArea(
-        child: Column(
-          children: [
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
-              color: Colors.black87,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  GestureDetector(
-                    onTap: () => Navigator.pop(context),
-                    child: const Icon(Icons.arrow_back, color: Colors.white),
-                  ),
-                  const Text(
-                    "Doctor Detail",
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
-                  ),
-                  const SizedBox(width: 24),
-                ],
-              ),
+    return Padding(
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom,
+        left: 20,
+        right: 20,
+        top: 20,
+      ),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: [
+            BoxShadow(
+              color: kPrimaryColor.withOpacity(0.08),
+              blurRadius: 10,
+              offset: const Offset(0, 2),
             ),
-            Expanded(
-              child: Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(20),
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.only(
-                    topLeft: Radius.circular(24),
-                    topRight: Radius.circular(24),
-                  ),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              children: [
+                CircleAvatar(
+                  backgroundImage: AssetImage(widget.imagePath),
+                  radius: 32,
+                  backgroundColor: kSecondaryColor.withOpacity(0.1),
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.center,
+                const SizedBox(width: 16),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(16),
-                      child: Image.asset(
-                        doctor.imagePath,
-                        width: 120,
-                        height: 120,
-                        fit: BoxFit.cover,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      doctor.name,
-                      style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      doctor.specialty,
-                      style: const TextStyle(
-                        color: Colors.blueAccent,
-                        fontSize: 16,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(Icons.person, size: 18, color: Colors.grey),
-                        const SizedBox(width: 4),
-                        Text(
-                          'Patients: ${doctor.patients}',
-                          style: const TextStyle(color: Colors.grey),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 24),
-                    Text(
-                      doctor.description,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        fontSize: 15,
-                        color: Colors.black87,
-                        height: 1.4,
-                      ),
-                    ),
-                    const Spacer(),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text("Booking feature coming soon!")),
-                          );
-                        },
-                        style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          backgroundColor: const Color(0xff3E69FE),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        child: const Text(
-                          "Book Appointment",
-                          style: TextStyle(fontSize: 16),
-                        ),
-                      ),
-                    )
+                    Text(widget.doctorName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: kPrimaryColor)),
+                    Text(widget.specialty, style: const TextStyle(color: kSecondaryColor)),
                   ],
                 ),
+              ],
+            ),
+            const SizedBox(height: 24),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    icon: Icon(Icons.calendar_today, color: kPrimaryColor),
+                    label: Text(selectedDate == null ? 'Select Date' : '${selectedDate!.day}/${selectedDate!.month}/${selectedDate!.year}', style: const TextStyle(color: kPrimaryColor)),
+                    style: OutlinedButton.styleFrom(
+                      side: BorderSide(color: kPrimaryColor),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    onPressed: _pickDate,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    icon: Icon(Icons.access_time, color: kPrimaryColor),
+                    label: Text(selectedTime == null ? 'Select Time' : selectedTime!.format(context), style: const TextStyle(color: kPrimaryColor)),
+                    style: OutlinedButton.styleFrom(
+                      side: BorderSide(color: kPrimaryColor),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    onPressed: _pickTime,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: kAccentColor,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                ),
+                onPressed: isBooking ? null : _bookAppointment,
+                child: isBooking
+                    ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                    : const Text('Book Appointment', style: TextStyle(fontSize: 16, color: Colors.white)),
               ),
             ),
+            const SizedBox(height: 16),
           ],
         ),
       ),

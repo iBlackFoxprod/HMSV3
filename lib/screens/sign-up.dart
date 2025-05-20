@@ -119,153 +119,219 @@ class _SignUpPageState extends State<SignUpPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("Patient Registration"),
-        centerTitle: true,
-        backgroundColor: const Color(0xff3E69FE),
-      ),
+      backgroundColor: Colors.white,
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              children: [
-                if (_errorMessage.isNotEmpty)
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    margin: const EdgeInsets.only(bottom: 16),
-                    decoration: BoxDecoration(
-                      color: Colors.red.shade50,
-                      border: Border.all(color: Colors.red.shade200),
-                      borderRadius: BorderRadius.circular(10),
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 40),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Image.asset(
+                    'assets/images/logo.png',
+                    width: 250,
+                  ),
+                  const SizedBox(height: 40),
+                  const Text(
+                    'Create Account',
+                    style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Sign up to get started',
+                    style: TextStyle(fontSize: 16, color: Colors.grey),
+                  ),
+                  const SizedBox(height: 30),
+                  if (_errorMessage.isNotEmpty)
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      margin: const EdgeInsets.only(bottom: 16),
+                      decoration: BoxDecoration(
+                        color: Colors.red.shade50,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: Colors.red.shade200),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.error_outline, color: Colors.red.shade700),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              _errorMessage,
+                              style: TextStyle(color: Colors.red.shade700),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                    child: Row(
-                      children: [
-                        Icon(Icons.error_outline, color: Colors.red.shade700),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            _errorMessage,
-                            style: TextStyle(color: Colors.red.shade700),
+                  TextFormField(
+                    controller: _firstNameController,
+                    decoration: InputDecoration(
+                      labelText: "First Name",
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                    validator: (val) => val == null || val.isEmpty ? "Required" : null,
+                  ),
+                  const SizedBox(height: 10),
+                  TextFormField(
+                    controller: _lastNameController,
+                    decoration: InputDecoration(
+                      labelText: "Last Name",
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                    validator: (val) => val == null || val.isEmpty ? "Required" : null,
+                  ),
+                  const SizedBox(height: 10),
+                  TextFormField(
+                    controller: _emailController,
+                    keyboardType: TextInputType.emailAddress,
+                    decoration: InputDecoration(
+                      labelText: "Email",
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                    validator: (val) {
+                      if (val == null || val.isEmpty) return "Required";
+                      final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+                      if (!emailRegex.hasMatch(val)) return "Invalid email";
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 10),
+                  TextFormField(
+                    controller: _passwordController,
+                    obscureText: !_isPasswordVisible,
+                    decoration: InputDecoration(
+                      labelText: "Password",
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      suffixIcon: IconButton(
+                        icon: Icon(_isPasswordVisible
+                            ? Icons.visibility_off
+                            : Icons.visibility),
+                        onPressed: () => setState(() {
+                          _isPasswordVisible = !_isPasswordVisible;
+                        }),
+                      ),
+                    ),
+                    validator: (val) => val != null && val.length < 6
+                        ? "Minimum 6 characters"
+                        : null,
+                  ),
+                  const SizedBox(height: 10),
+                  TextFormField(
+                    controller: _confirmPasswordController,
+                    obscureText: !_isConfirmPasswordVisible,
+                    decoration: InputDecoration(
+                      labelText: "Confirm Password",
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      suffixIcon: IconButton(
+                        icon: Icon(_isConfirmPasswordVisible
+                            ? Icons.visibility_off
+                            : Icons.visibility),
+                        onPressed: () => setState(() {
+                          _isConfirmPasswordVisible = !_isConfirmPasswordVisible;
+                        }),
+                      ),
+                    ),
+                    validator: (val) =>
+                        val != _passwordController.text ? "Passwords don't match" : null,
+                  ),
+                  const SizedBox(height: 10),
+                  TextFormField(
+                    controller: _ageController,
+                    keyboardType: TextInputType.number,
+                    decoration: InputDecoration(
+                      labelText: "Age",
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                    validator: (val) {
+                      final age = int.tryParse(val ?? "");
+                      if (age == null || age < 1 || age > 120) return "Invalid age";
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 10),
+                  DropdownButtonFormField<String>(
+                    value: _selectedGender,
+                    items: _genderOptions.map((gender) {
+                      return DropdownMenuItem(
+                        value: gender,
+                        child: Text(gender),
+                      );
+                    }).toList(),
+                    onChanged: (val) => setState(() {
+                      _selectedGender = val!;
+                    }),
+                    decoration: InputDecoration(
+                      labelText: "Gender",
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  ElevatedButton(
+                    onPressed: _isLoading ? null : _registerPatient,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xff3E69FE),
+                      minimumSize: const Size.fromHeight(50),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      disabledBackgroundColor:
+                          const Color(0xff3E69FE).withOpacity(0.6),
+                    ),
+                    child: _isLoading
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2,
+                            ),
+                          )
+                        : const Text(
+                            'Sign Up',
+                            style: TextStyle(fontSize: 18, color: Colors.white),
+                          ),
+                  ),
+                  const SizedBox(height: 24),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Text(
+                        "Already have an account? ",
+                        style: TextStyle(color: Colors.grey),
+                      ),
+                      GestureDetector(
+                        onTap: () {
+                          Navigator.pushReplacementNamed(context, '/login');
+                        },
+                        child: const Text(
+                          'Log in',
+                          style: TextStyle(
+                            color: Color(0xff3E69FE),
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
-
-                TextFormField(
-                  controller: _firstNameController,
-                  decoration: const InputDecoration(labelText: "First Name"),
-                  validator: (val) => val == null || val.isEmpty ? "Required" : null,
-                ),
-                const SizedBox(height: 10),
-
-                TextFormField(
-                  controller: _lastNameController,
-                  decoration: const InputDecoration(labelText: "Last Name"),
-                  validator: (val) => val == null || val.isEmpty ? "Required" : null,
-                ),
-                const SizedBox(height: 10),
-
-                TextFormField(
-                  controller: _emailController,
-                  keyboardType: TextInputType.emailAddress,
-                  decoration: const InputDecoration(labelText: "Email"),
-                  validator: (val) {
-                    if (val == null || val.isEmpty) return "Required";
-                    final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
-                    if (!emailRegex.hasMatch(val)) return "Invalid email";
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 10),
-
-                TextFormField(
-                  controller: _passwordController,
-                  obscureText: !_isPasswordVisible,
-                  decoration: InputDecoration(
-                    labelText: "Password",
-                    suffixIcon: IconButton(
-                      icon: Icon(_isPasswordVisible
-                          ? Icons.visibility_off
-                          : Icons.visibility),
-                      onPressed: () => setState(() {
-                        _isPasswordVisible = !_isPasswordVisible;
-                      }),
-                    ),
-                  ),
-                  validator: (val) => val != null && val.length < 6
-                      ? "Minimum 6 characters"
-                      : null,
-                ),
-                const SizedBox(height: 10),
-
-                TextFormField(
-                  controller: _confirmPasswordController,
-                  obscureText: !_isConfirmPasswordVisible,
-                  decoration: InputDecoration(
-                    labelText: "Confirm Password",
-                    suffixIcon: IconButton(
-                      icon: Icon(_isConfirmPasswordVisible
-                          ? Icons.visibility_off
-                          : Icons.visibility),
-                      onPressed: () => setState(() {
-                        _isConfirmPasswordVisible = !_isConfirmPasswordVisible;
-                      }),
-                    ),
-                  ),
-                  validator: (val) =>
-                      val != _passwordController.text ? "Passwords don't match" : null,
-                ),
-                const SizedBox(height: 10),
-
-                TextFormField(
-                  controller: _ageController,
-                  keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(labelText: "Age"),
-                  validator: (val) {
-                    final age = int.tryParse(val ?? "");
-                    if (age == null || age < 1 || age > 120) return "Invalid age";
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 10),
-
-                DropdownButtonFormField<String>(
-                  value: _selectedGender,
-                  items: _genderOptions.map((gender) {
-                    return DropdownMenuItem(
-                      value: gender,
-                      child: Text(gender),
-                    );
-                  }).toList(),
-                  onChanged: (val) => setState(() {
-                    _selectedGender = val!;
-                  }),
-                  decoration: const InputDecoration(labelText: "Gender"),
-                ),
-                const SizedBox(height: 20),
-
-                ElevatedButton(
-                  onPressed: _isLoading ? null : _registerPatient,
-                  style: ElevatedButton.styleFrom(
-                    minimumSize: const Size.fromHeight(50),
-                    backgroundColor: const Color(0xff3E69FE),
-                  ),
-                  child: _isLoading
-                      ? const CircularProgressIndicator(color: Colors.white)
-                      : const Text("Sign Up", style: TextStyle(color: Colors.white)),
-                ),
-                const SizedBox(height: 20),
-
-                TextButton(
-                  onPressed: () {
-                    Navigator.pushReplacementNamed(context, '/login');
-                  },
-                  child: const Text("Already have an account? Log in"),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
