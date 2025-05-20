@@ -298,7 +298,7 @@ class _HomeMenuButton extends StatelessWidget {
   const _HomeMenuButton({
     required this.icon,
     required this.label,
-    required this.iconColor,
+    required this.iconColor,w
   });
 
   @override
