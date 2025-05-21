@@ -22,6 +22,9 @@ class _SignUpPageState extends State<SignUpPage> {
   String _selectedGender = 'Prefer not to say';
   final List<String> _genderOptions = ['Male', 'Female', 'Other', 'Prefer not to say'];
 
+  String _selectedRole = 'Patient';
+  final List<String> _roles = ['Patient', 'Staff', 'SuperAdmin'];
+
   bool _isPasswordVisible = false;
   bool _isConfirmPasswordVisible = false;
   bool _isLoading = false;
@@ -65,7 +68,7 @@ class _SignUpPageState extends State<SignUpPage> {
         "gender": _selectedGender,
         "age": int.tryParse(_ageController.text.trim()) ?? 0,
         "createdAt": ServerValue.timestamp,
-        "role": "Patient",
+        "role": _selectedRole,
       };
 
       await _db.child("users").child(uid).set(userData);
