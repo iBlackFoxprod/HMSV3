@@ -82,12 +82,12 @@ flutter:
   # the material Icons class.
   uses-material-design: true
   assets:
-    - assets/images/logo.png
-    - assets/images/undraw_doctors_djoj.png
-    - assets/images/undraw_access_account_aydp.png
     - assets/images/doctor1.jpg
     - assets/images/doctor2.jpg
     - assets/images/doctor3.jpg
+    - assets/images/logo.png
+    - assets/images/undraw_doctors_djoj.png
+    - assets/images/undraw_access_account_aydp.png
   
 
   # To add assets to your application, add an assets section, like this:
