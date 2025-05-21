@@ -3,7 +3,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'create_staff_account.dart';
 import 'manage_staff.dart';
 import 'view_patients.dart';
-import 'system_settings.dart';
 
 class SuperAdminDashboard extends StatelessWidget {
   const SuperAdminDashboard({super.key});
@@ -80,18 +79,6 @@ class SuperAdminDashboard extends StatelessWidget {
                 Navigator.push(
                   context,
                   MaterialPageRoute(builder: (context) => const ViewPatients()),
-                );
-              },
-            ),
-            _buildDashboardTile(
-              context,
-              title: 'System Settings',
-              icon: Icons.settings,
-              description: 'Configure application settings and preferences',
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const SystemSettings()),
                 );
               },
             ),

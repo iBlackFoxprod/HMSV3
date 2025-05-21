@@ -14,6 +14,9 @@ class _CreateStaffAccountState extends State<CreateStaffAccount> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _roleController = TextEditingController();
+  final _fullNameController = TextEditingController();
+  final List<String> _roles = ['Doctor', 'Nurse', 'Receptionist', 'Lab Technician', 'Pharmacist', 'Other'];
+  String? _selectedRole;
 
   bool _loading = false;
 
@@ -28,11 +31,12 @@ class _CreateStaffAccountState extends State<CreateStaffAccount> {
             );
 
         await FirebaseFirestore.instance
-            .collection('staff')
+            .collection('users')
             .doc(userCredential.user!.uid)
             .set({
+          'full-name': _fullNameController.text.trim(),
           'email': _emailController.text.trim(),
-          'role': _roleController.text.trim(),
+          'role': _selectedRole ?? '',
           'createdAt': Timestamp.now(),
         });
 
@@ -42,10 +46,23 @@ class _CreateStaffAccountState extends State<CreateStaffAccount> {
 
         _emailController.clear();
         _passwordController.clear();
-        _roleController.clear();
+        _selectedRole = null;
+        _fullNameController.clear();
       } catch (e) {
+        String errorMsg = 'Error: $e';
+        if (e is FirebaseAuthException) {
+          if (e.code == 'email-already-in-use') {
+            errorMsg = 'This email is already in use.';
+          } else if (e.code == 'invalid-email') {
+            errorMsg = 'The email address is invalid.';
+          } else if (e.code == 'weak-password') {
+            errorMsg = 'The password is too weak.';
+          } else {
+            errorMsg = e.message ?? errorMsg;
+          }
+        }
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
+          SnackBar(content: Text(errorMsg)),
         );
       }
       setState(() => _loading = false);
@@ -75,11 +92,21 @@ class _CreateStaffAccountState extends State<CreateStaffAccount> {
                 validator: (value) =>
                     value!.length < 6 ? 'Min 6 characters' : null,
               ),
+              DropdownButtonFormField<String>(
+                value: _selectedRole,
+                items: _roles.map((role) => DropdownMenuItem(
+                  value: role,
+                  child: Text(role),
+                )).toList(),
+                onChanged: (val) => setState(() => _selectedRole = val),
+                decoration: const InputDecoration(labelText: "Role"),
+                validator: (value) => value == null || value.isEmpty ? 'Select a role' : null,
+              ),
               TextFormField(
-                controller: _roleController,
-                decoration: const InputDecoration(labelText: "Role (e.g. Doctor, Nurse)"),
+                controller: _fullNameController,
+                decoration: const InputDecoration(labelText: "Full Name"),
                 validator: (value) =>
-                    value!.isEmpty ? 'Enter role' : null,
+                    value!.isEmpty ? 'Enter full name' : null,
               ),
               const SizedBox(height: 20),
               ElevatedButton(

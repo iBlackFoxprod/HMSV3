@@ -19,6 +19,8 @@ class _LoginPageState extends State<LoginPage> {
   bool _isPasswordVisible = false;
   bool _isLoading = false;
   String _errorMessage = '';
+  String _selectedRole = 'Patient';
+  final List<String> _roles = ['Patient', 'Staff', 'SuperAdmin'];
 
   // Firebase instance
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -254,6 +256,27 @@ class _LoginPageState extends State<LoginPage> {
                         return 'Password must be at least 6 characters';
                       }
                       return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  DropdownButtonFormField<String>(
+                    value: _selectedRole,
+                    decoration: const InputDecoration(
+                      labelText: 'Role',
+                      border: OutlineInputBorder(),
+                    ),
+                    items: _roles.map((role) {
+                      return DropdownMenuItem(
+                        value: role,
+                        child: Text(role),
+                      );
+                    }).toList(),
+                    onChanged: (String? newValue) {
+                      if (newValue != null) {
+                        setState(() {
+                          _selectedRole = newValue;
+                        });
+                      }
                     },
                   ),
                   const SizedBox(height: 12),

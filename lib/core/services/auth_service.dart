@@ -36,11 +36,9 @@ class AuthService {
   Future<UserModel?> signUpWithEmailAndPassword({
     required String email,
     required String password,
-    required String firstName, // From your registration screen
-    required String lastName, // From your registration screen
-    // required String age, // Consider if age is needed at sign-up or later profile completion
-    // required String gender, // Same as age
-    UserRole role = UserRole.patient, // Default role for new sign-ups
+    required String firstName,
+    required String lastName,
+    required UserRole role,
   }) async {
     try {
       final userCredential = await _firebaseAuth.createUserWithEmailAndPassword(
@@ -58,16 +56,14 @@ class AuthService {
           email: fbUser.email,
           displayName: '$firstName $lastName',
           role: role,
-          // You might want to add creation timestamp here
         );
         await _firestore.collection('users').doc(fbUser.uid).set(newUser.toFirestore());
         return newUser;
       }
       return null;
     } on fb_auth.FirebaseAuthException catch (e) {
-      // Handle specific errors (e.g., email-already-in-use)
       print('FirebaseAuthException on SignUp: ${e.message}');
-      throw Exception(e.message); // Re-throw for UI to catch
+      throw Exception(e.message);
     } catch (e) {
       print('Error on SignUp: $e');
       throw Exception('An unknown error occurred during sign up.');
@@ -90,8 +86,13 @@ class AuthService {
         if (userDoc.exists) {
           return UserModel.fromFirestore(userDoc as DocumentSnapshot<Map<String, dynamic>>);
         }
-        // Potentially handle case where user exists in auth but not firestore
-        return UserModel(uid: fbUser.uid, email: fbUser.email, displayName: fbUser.displayName);
+        // If user exists in auth but not in firestore, create a basic user model
+        return UserModel(
+          uid: fbUser.uid,
+          email: fbUser.email,
+          displayName: fbUser.displayName,
+          role: UserRole.patient, // Default role if not found in Firestore
+        );
       }
       return null;
     } on fb_auth.FirebaseAuthException catch (e) {

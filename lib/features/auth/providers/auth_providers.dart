@@ -55,6 +55,7 @@ class AuthController extends StateNotifier<AuthState> {
     required String password,
     required String firstName,
     required String lastName,
+    required UserRole role,
   }) async {
     state = state.copyWith(status: AuthStatus.loading, errorMessage: null);
     try {
@@ -63,7 +64,7 @@ class AuthController extends StateNotifier<AuthState> {
         password: password,
         firstName: firstName,
         lastName: lastName,
-        // role: UserRole.patient // Or get role from form if applicable
+        role: role,
       );
       state = state.copyWith(status: AuthStatus.success);
       return true;

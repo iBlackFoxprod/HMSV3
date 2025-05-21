@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class AppointmentBookingPage extends StatelessWidget {
   const AppointmentBookingPage({super.key});
@@ -73,8 +75,65 @@ class AppointmentBookingPage extends StatelessWidget {
               ),
               const Spacer(),
               ElevatedButton(
-                onPressed: () {
-                  // TODO: Handle booking
+                onPressed: () async {
+                  // Example: Replace with actual selected doctor, date, etc.
+                  final user = FirebaseAuth.instance.currentUser;
+                  final patientId = user?.uid ?? 'unknown_patient';
+                  final patientName = user?.displayName ?? 'Unknown';
+                  final doctorId = 'doctorId123';
+                  final doctorName = 'Dr. Michael Reeve';
+                  final date = DateTime.now();
+                  final price = 100; // Example price, replace with real logic
+
+                  try {
+                    // 1. Add appointment
+                    final apptRef = await FirebaseFirestore.instance.collection('appointments').add({
+                      'patientId': patientId,
+                      'patientName': patientName,
+                      'doctorId': doctorId,
+                      'doctorName': doctorName,
+                      'date': date,
+                      'status': 'Confirmed',
+                    });
+
+                    // 2. Add bill
+                    await FirebaseFirestore.instance.collection('bills').add({
+                      'patientId': patientId,
+                      'appointmentId': apptRef.id,
+                      'amount': price,
+                      'status': 'Unpaid',
+                      'date': date,
+                    });
+
+                    // 3. Show confirmation
+                    showDialog(
+                      context: context,
+                      builder: (context) => AlertDialog(
+                        title: const Text('Success'),
+                        content: const Text('Appointment booked and bill generated!'),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(context),
+                            child: const Text('OK'),
+                          ),
+                        ],
+                      ),
+                    );
+                  } catch (e) {
+                    showDialog(
+                      context: context,
+                      builder: (context) => AlertDialog(
+                        title: const Text('Error'),
+                        content: Text('Failed to book appointment: $e'),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(context),
+                            child: const Text('OK'),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xff3E69FE),
