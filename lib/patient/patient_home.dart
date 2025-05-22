@@ -853,8 +853,7 @@ class PharmacyPage extends StatefulWidget {
 }
 
 class _PharmacyPageState extends State<PharmacyPage> {
-  final _dbRef = FirebaseDatabase.instance.reference();
-  List<Medicine> _medicines = [];
+  List<DocumentSnapshot> _medicines = [];
   bool _loading = true;
   String? _error;
 
@@ -864,17 +863,18 @@ class _PharmacyPageState extends State<PharmacyPage> {
     _fetchMedicines();
   }
 
-  Future<void> _fetchMedicines() async {
-    try {
-      final snapshot = await _dbRef.child('medicines').once();
-      final data = snapshot.snapshot.value as Map?;
-      if (data != null) {
-        _medicines = data.values.map((e) => Medicine.fromMap(Map<String, dynamic>.from(e))).toList();
-      }
-    } catch (e) {
-      _error = 'Failed to load medicines.';
-    }
-    setState(() { _loading = false; });
+  void _fetchMedicines() {
+    FirebaseFirestore.instance.collection('medicines').snapshots().listen((snapshot) {
+      setState(() {
+        _medicines = snapshot.docs;
+        _loading = false;
+      });
+    }, onError: (e) {
+      setState(() {
+        _error = 'Failed to load medicines.';
+        _loading = false;
+      });
+    });
   }
 
   @override
@@ -887,17 +887,19 @@ class _PharmacyPageState extends State<PharmacyPage> {
               ? Center(child: Text(_error!))
               : ListView(
                   padding: const EdgeInsets.all(20),
-                  children: _medicines.map((med) => _MedicineCard(medicine: med)).toList(),
+                  children: _medicines.map((doc) => _MedicineCardFirestore(doc: doc)).toList(),
                 ),
     );
   }
 }
 
-class _MedicineCard extends StatelessWidget {
-  final Medicine medicine;
-  const _MedicineCard({required this.medicine});
+class _MedicineCardFirestore extends StatelessWidget {
+  final DocumentSnapshot doc;
+  const _MedicineCardFirestore({required this.doc});
   @override
   Widget build(BuildContext context) {
+    final med = doc.data() as Map<String, dynamic>;
+    final available = (med['quantity'] ?? 0) > 0;
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
@@ -916,14 +918,14 @@ class _MedicineCard extends StatelessWidget {
         leading: ClipRRect(
           borderRadius: BorderRadius.circular(12),
           child: Image.asset(
-            medicine.imagePath,
+            med['imagePath'] ?? 'assets/images/medicine.png',
             width: 55,
             height: 55,
             fit: BoxFit.cover,
           ),
         ),
         title: Text(
-          medicine.name,
+          med['name'] ?? '',
           style: const TextStyle(
             fontWeight: FontWeight.bold,
             color: Colors.blue,
@@ -934,26 +936,29 @@ class _MedicineCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              medicine.type,
+              med['type'] ?? '',
               style: const TextStyle(
                 color: Colors.grey,
                 fontSize: 14,
               ),
             ),
             const SizedBox(height: 4),
+            Text('Qty: ${med['quantity'] ?? 0}'),
+            Text('Expiry: ${med['expiry'] ?? ''}'),
+            const SizedBox(height: 4),
             Row(
               children: [
                 Icon(
-                  medicine.available ? Icons.check_circle : Icons.cancel,
-                  color: medicine.available ? Colors.green : Colors.red,
+                  available ? Icons.check_circle : Icons.cancel,
+                  color: available ? Colors.green : Colors.red,
                   size: 16,
                 ),
                 const SizedBox(width: 4),
                 Text(
-                  medicine.available ? 'Available' : 'Out of stock',
+                  available ? 'Available' : 'Out of stock',
                   style: TextStyle(
                     fontSize: 13,
-                    color: medicine.available ? Colors.green : Colors.red,
+                    color: available ? Colors.green : Colors.red,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -961,7 +966,7 @@ class _MedicineCard extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             ElevatedButton(
-              onPressed: medicine.available
+              onPressed: available
                   ? () async {
                       final user = FirebaseAuth.instance.currentUser;
                       if (user == null) {
@@ -972,10 +977,16 @@ class _MedicineCard extends StatelessWidget {
                       }
                       final patientId = user.uid;
                       final patientName = user.displayName ?? 'Unknown';
-                      final medicineId = medicine.name;
+                      final medicineId = med['name'] ?? '';
                       final price = 50;
                       final date = DateTime.now();
                       try {
+                        // Decrement quantity
+                        final newQty = (med['quantity'] ?? 0) - 1;
+                        await FirebaseFirestore.instance.collection('medicines').doc(doc.id).update({
+                          'quantity': newQty,
+                        });
+                        // Create bill
                         await FirebaseFirestore.instance.collection('bills').add({
                           'amount': price,
                           'medicineId': medicineId,
