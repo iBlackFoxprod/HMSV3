@@ -63,6 +63,15 @@ class _LoginPageState extends State<LoginPage> {
             final userData = snapshot.value as Map<dynamic, dynamic>;
             final String userRole = userData['role'] ?? 'Patient';
             
+            // Check if selected role matches user's actual role
+            if (userRole != _selectedRole) {
+              setState(() {
+                _errorMessage = 'Invalid role selected. Please select the correct role for your account.';
+                _isLoading = false;
+              });
+              return;
+            }
+            
             if (mounted) {
               // Navigate based on user role
               switch (userRole) {

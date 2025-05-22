@@ -111,7 +111,12 @@ class StaffDashboard extends StatelessWidget {
                   label: 'Messages',
                   color: const Color(0xFFFDE7E7),
                   iconColor: const Color(0xFFB8001F),
-                  onTap: () {},
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const MessagesPage()),
+                    );
+                  },
                 ),
                 _DashboardCard(
                   icon: Icons.access_time,
@@ -149,6 +154,18 @@ class StaffDashboard extends StatelessWidget {
                     );
                   },
                 ),
+                _DashboardCard(
+                  icon: Icons.bed,
+                  label: 'Bed Management',
+                  color: const Color(0xFFE7F0FD),
+                  iconColor: const Color(0xFF384B70),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const BedManagementPage()),
+                    );
+                  },
+                ),
               ],
             ),
             const SizedBox(height: 24),
@@ -183,31 +200,36 @@ class _DashboardCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        height: 90,
-        width: 90,
         decoration: BoxDecoration(
           color: color,
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.grey.withOpacity(0.08),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
+              color: Colors.grey.withOpacity(0.1),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
             ),
           ],
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, color: iconColor, size: 28),
-            const SizedBox(height: 10),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: iconColor.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, color: iconColor, size: 28),
+            ),
+            const SizedBox(height: 12),
             Text(
               label,
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: iconColor,
                 fontWeight: FontWeight.w600,
-                fontSize: 13,
+                fontSize: 14,
               ),
             ),
           ],
@@ -223,9 +245,11 @@ class MedicalRecordPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFFCFAEE),
       appBar: AppBar(
         title: const Text('Medical Records'),
         backgroundColor: const Color(0xff3E69FE),
+        elevation: 0,
       ),
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
@@ -233,37 +257,89 @@ class MedicalRecordPage extends StatelessWidget {
             .where('role', isEqualTo: 'patient')
             .snapshots(),
         builder: (context, snapshot) {
-          print('StreamBuilder state: ${snapshot.connectionState}');
-          print('Has data: ${snapshot.hasData}');
-          print('Has error: ${snapshot.hasError}');
-          if (snapshot.hasError) {
-            print('Error: ${snapshot.error}');
-          }
-          if (snapshot.hasData) {
-            print('Number of patients: ${snapshot.data!.docs.length}');
-            snapshot.data!.docs.forEach((doc) {
-              print('Patient data: ${doc.data()}');
-            });
-          }
-
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
           if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-            return const Center(child: Text('No patients found'));
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.people_outline, size: 64, color: Colors.grey.shade400),
+                  const SizedBox(height: 16),
+                  Text(
+                    'No patients found',
+                    style: TextStyle(
+                      fontSize: 18,
+                      color: Colors.grey.shade600,
+                    ),
+                  ),
+                ],
+              ),
+            );
           }
           final patients = snapshot.data!.docs;
           return ListView.builder(
+            padding: const EdgeInsets.all(16),
             itemCount: patients.length,
             itemBuilder: (context, index) {
               final patient = patients[index];
               final patientData = patient.data() as Map<String, dynamic>;
-              print('Building patient card for: ${patientData['full-name']}');
               return Card(
+                elevation: 2,
+                margin: const EdgeInsets.only(bottom: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
                 child: ListTile(
-                  title: Text(patientData['full-name'] ?? 'No Name'),
-                  subtitle: Text('Age: ${patientData['age'] ?? 'N/A'} | Email: ${patientData['email'] ?? 'N/A'}'),
-                  trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                  contentPadding: const EdgeInsets.all(16),
+                  leading: CircleAvatar(
+                    backgroundColor: const Color(0xff3E69FE).withOpacity(0.1),
+                    child: Text(
+                      patientData['full-name']?.toString().substring(0, 1).toUpperCase() ?? '?',
+                      style: const TextStyle(
+                        color: Color(0xff3E69FE),
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  title: Text(
+                    patientData['full-name'] ?? 'No Name',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
+                  subtitle: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const SizedBox(height: 4),
+                      Text(
+                        'Age: ${patientData['age'] ?? 'N/A'}',
+                        style: TextStyle(
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
+                      Text(
+                        'Email: ${patientData['email'] ?? 'N/A'}',
+                        style: TextStyle(
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
+                    ],
+                  ),
+                  trailing: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xff3E69FE).withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(
+                      Icons.arrow_forward_ios,
+                      size: 16,
+                      color: Color(0xff3E69FE),
+                    ),
+                  ),
                   onTap: () {
                     Navigator.push(
                       context,
@@ -1123,6 +1199,836 @@ class _ShiftManagementPageState extends State<ShiftManagementPage> {
                         );
                       },
                     ),
+    );
+  }
+}
+
+class BedManagementPage extends StatefulWidget {
+  const BedManagementPage({super.key});
+
+  @override
+  State<BedManagementPage> createState() => _BedManagementPageState();
+}
+
+class _BedManagementPageState extends State<BedManagementPage> {
+  bool _loading = true;
+  List<Map<String, dynamic>> _beds = [];
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadBeds();
+  }
+
+  Future<void> _loadBeds() async {
+    setState(() { _loading = true; });
+    try {
+      final querySnapshot = await FirebaseFirestore.instance
+          .collection('beds')
+          .orderBy('bedNumber')
+          .get();
+
+      setState(() {
+        _beds = querySnapshot.docs.map((doc) => {
+          'id': doc.id,
+          ...doc.data(),
+        }).toList();
+        _loading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _error = 'Failed to load beds: $e';
+        _loading = false;
+      });
+    }
+  }
+
+  Future<void> _updateBedStatus(String bedId, String newStatus) async {
+    try {
+      await FirebaseFirestore.instance.collection('beds').doc(bedId).update({
+        'status': newStatus,
+        'lastUpdated': DateTime.now(),
+        'updatedBy': FirebaseAuth.instance.currentUser?.uid,
+      });
+
+      // Log the bed status change
+      await FirebaseFirestore.instance.collection('bed_logs').add({
+        'bedId': bedId,
+        'previousStatus': _beds.firstWhere((bed) => bed['id'] == bedId)['status'],
+        'newStatus': newStatus,
+        'updatedBy': FirebaseAuth.instance.currentUser?.uid,
+        'updatedAt': DateTime.now(),
+      });
+
+      await _loadBeds();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Bed status updated successfully')),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to update bed status: $e')),
+      );
+    }
+  }
+
+  Future<void> _addNewBed() async {
+    try {
+      // Get the next bed number
+      final lastBed = _beds.isNotEmpty 
+          ? _beds.reduce((curr, next) => 
+              int.parse(curr['bedNumber'].toString()) > int.parse(next['bedNumber'].toString()) 
+                  ? curr 
+                  : next)
+          : null;
+      
+      final nextBedNumber = lastBed != null 
+          ? int.parse(lastBed['bedNumber'].toString()) + 1 
+          : 1;
+
+      await FirebaseFirestore.instance.collection('beds').add({
+        'bedNumber': nextBedNumber.toString(),
+        'status': 'Available',
+        'ward': 'General',
+        'createdAt': DateTime.now(),
+        'createdBy': FirebaseAuth.instance.currentUser?.uid,
+      });
+
+      await _loadBeds();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('New bed added successfully')),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to add new bed: $e')),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFFFCFAEE),
+      appBar: AppBar(
+        title: const Text('Bed Management'),
+        backgroundColor: const Color(0xff3E69FE),
+        elevation: 0,
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _addNewBed,
+        backgroundColor: const Color(0xff3E69FE),
+        elevation: 4,
+        child: const Icon(Icons.add),
+      ),
+      body: _loading
+          ? const Center(child: CircularProgressIndicator())
+          : _error != null
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.error_outline, size: 64, color: Colors.red.shade300),
+                      const SizedBox(height: 16),
+                      Text(
+                        _error!,
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Colors.red.shade700,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
+                )
+              : Column(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: const BoxDecoration(
+                        color: Color(0xff3E69FE),
+                        borderRadius: BorderRadius.only(
+                          bottomLeft: Radius.circular(24),
+                          bottomRight: Radius.circular(24),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceAround,
+                        children: [
+                          _buildStatCard(
+                            'Total Beds',
+                            _beds.length.toString(),
+                            Icons.bed,
+                            Colors.white,
+                          ),
+                          _buildStatCard(
+                            'Available',
+                            _beds.where((bed) => bed['status'] == 'Available').length.toString(),
+                            Icons.check_circle,
+                            Colors.white,
+                          ),
+                          _buildStatCard(
+                            'Occupied',
+                            _beds.where((bed) => bed['status'] == 'Occupied').length.toString(),
+                            Icons.person,
+                            Colors.white,
+                          ),
+                        ],
+                      ),
+                    ),
+                    Expanded(
+                      child: _beds.isEmpty
+                          ? Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(Icons.bed_outlined, size: 64, color: Colors.grey.shade400),
+                                  const SizedBox(height: 16),
+                                  Text(
+                                    'No beds available',
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      color: Colors.grey.shade600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            )
+                          : ListView.builder(
+                              padding: const EdgeInsets.all(16),
+                              itemCount: _beds.length,
+                              itemBuilder: (context, index) {
+                                final bed = _beds[index];
+                                return Card(
+                                  elevation: 2,
+                                  margin: const EdgeInsets.only(bottom: 12),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: ListTile(
+                                    contentPadding: const EdgeInsets.all(16),
+                                    leading: CircleAvatar(
+                                      backgroundColor: bed['status'] == 'Available'
+                                          ? Colors.green.withOpacity(0.1)
+                                          : Colors.red.withOpacity(0.1),
+                                      child: Text(
+                                        bed['bedNumber'],
+                                        style: TextStyle(
+                                          color: bed['status'] == 'Available'
+                                              ? Colors.green
+                                              : Colors.red,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                    title: Text(
+                                      'Bed ${bed['bedNumber']}',
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 16,
+                                      ),
+                                    ),
+                                    subtitle: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          'Ward: ${bed['ward']}',
+                                          style: TextStyle(
+                                            color: Colors.grey.shade600,
+                                          ),
+                                        ),
+                                        Text(
+                                          'Status: ${bed['status']}',
+                                          style: TextStyle(
+                                            color: bed['status'] == 'Available'
+                                                ? Colors.green
+                                                : Colors.red,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    trailing: PopupMenuButton<String>(
+                                      icon: const Icon(Icons.more_vert),
+                                      onSelected: (value) => _updateBedStatus(bed['id'], value),
+                                      itemBuilder: (context) => [
+                                        const PopupMenuItem(
+                                          value: 'Available',
+                                          child: Row(
+                                            children: [
+                                              Icon(Icons.check_circle, color: Colors.green),
+                                              SizedBox(width: 8),
+                                              Text('Mark as Available'),
+                                            ],
+                                          ),
+                                        ),
+                                        const PopupMenuItem(
+                                          value: 'Occupied',
+                                          child: Row(
+                                            children: [
+                                              Icon(Icons.person, color: Colors.red),
+                                              SizedBox(width: 8),
+                                              Text('Mark as Occupied'),
+                                            ],
+                                          ),
+                                        ),
+                                        const PopupMenuItem(
+                                          value: 'Maintenance',
+                                          child: Row(
+                                            children: [
+                                              Icon(Icons.build, color: Colors.orange),
+                                              SizedBox(width: 8),
+                                              Text('Mark as Under Maintenance'),
+                                            ],
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                    ),
+                  ],
+                ),
+    );
+  }
+
+  Widget _buildStatCard(String title, String value, IconData icon, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        children: [
+          Icon(icon, color: color, size: 24),
+          const SizedBox(height: 8),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
+          ),
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 12,
+              color: color.withOpacity(0.8),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class MessagesPage extends StatefulWidget {
+  const MessagesPage({super.key});
+
+  @override
+  State<MessagesPage> createState() => _MessagesPageState();
+}
+
+class _MessagesPageState extends State<MessagesPage> {
+  final _messageController = TextEditingController();
+  bool _loading = true;
+  List<Map<String, dynamic>> _conversations = [];
+  String? _error;
+  String? _selectedUserId;
+  List<Map<String, dynamic>> _messages = [];
+  final _scrollController = ScrollController();
+
+  @override
+  void initState() {
+    super.initState();
+    _loadConversations();
+  }
+
+  @override
+  void dispose() {
+    _messageController.dispose();
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadConversations() async {
+    setState(() { _loading = true; });
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) return;
+
+      final querySnapshot = await FirebaseFirestore.instance
+          .collection('conversations')
+          .where('participants', arrayContains: user.uid)
+          .orderBy('lastMessageTime', descending: true)
+          .get();
+
+      setState(() {
+        _conversations = querySnapshot.docs.map((doc) => {
+          'id': doc.id,
+          ...doc.data(),
+        }).toList();
+        _loading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _error = 'Failed to load conversations: $e';
+        _loading = false;
+      });
+    }
+  }
+
+  Future<void> _loadMessages(String conversationId) async {
+    try {
+      final querySnapshot = await FirebaseFirestore.instance
+          .collection('conversations')
+          .doc(conversationId)
+          .collection('messages')
+          .orderBy('timestamp', descending: false)
+          .get();
+
+      setState(() {
+        _messages = querySnapshot.docs.map((doc) => {
+          'id': doc.id,
+          ...doc.data(),
+        }).toList();
+      });
+
+      // Scroll to bottom
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to load messages: $e')),
+      );
+    }
+  }
+
+  Future<void> _sendMessage(String conversationId) async {
+    if (_messageController.text.trim().isEmpty) return;
+
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) return;
+
+      final message = {
+        'text': _messageController.text.trim(),
+        'senderId': user.uid,
+        'senderName': user.displayName ?? 'Unknown',
+        'timestamp': DateTime.now(),
+      };
+
+      await FirebaseFirestore.instance
+          .collection('conversations')
+          .doc(conversationId)
+          .collection('messages')
+          .add(message);
+
+      // Update conversation's last message
+      await FirebaseFirestore.instance
+          .collection('conversations')
+          .doc(conversationId)
+          .update({
+        'lastMessage': message['text'],
+        'lastMessageTime': message['timestamp'],
+      });
+
+      _messageController.clear();
+      await _loadMessages(conversationId);
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to send message: $e')),
+      );
+    }
+  }
+
+  Future<void> _startNewConversation(String userId, String userName) async {
+    try {
+      final currentUser = FirebaseAuth.instance.currentUser;
+      if (currentUser == null) return;
+
+      // Check if conversation already exists
+      final existingQuery = await FirebaseFirestore.instance
+          .collection('conversations')
+          .where('participants', arrayContains: currentUser.uid)
+          .get();
+
+      QueryDocumentSnapshot? existingConversation;
+      try {
+        existingConversation = existingQuery.docs.firstWhere(
+          (doc) {
+            final data = doc.data();
+            return data['participants'].contains(userId);
+          },
+        );
+      } catch (e) {
+        // No existing conversation found
+        existingConversation = null;
+      }
+
+      if (existingConversation != null) {
+        setState(() {
+          _selectedUserId = existingConversation!.id;
+        });
+        await _loadMessages(existingConversation.id);
+        return;
+      }
+
+      // Create new conversation
+      final conversationRef = await FirebaseFirestore.instance
+          .collection('conversations')
+          .add({
+        'participants': [currentUser.uid, userId],
+        'participantNames': [currentUser.displayName ?? 'Unknown', userName],
+        'lastMessage': '',
+        'lastMessageTime': DateTime.now(),
+        'createdAt': DateTime.now(),
+      });
+
+      setState(() {
+        _selectedUserId = conversationRef.id;
+      });
+      await _loadMessages(conversationRef.id);
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to start conversation: $e')),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFFFCFAEE),
+      appBar: AppBar(
+        title: const Text('Messages'),
+        backgroundColor: const Color(0xff3E69FE),
+        elevation: 0,
+      ),
+      body: _loading
+          ? const Center(child: CircularProgressIndicator())
+          : _error != null
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.error_outline, size: 64, color: Colors.red.shade300),
+                      const SizedBox(height: 16),
+                      Text(
+                        _error!,
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Colors.red.shade700,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
+                )
+              : Row(
+                  children: [
+                    // Conversations List
+                    Container(
+                      width: 300,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.grey.withOpacity(0.1),
+                            blurRadius: 4,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        children: [
+                          // New Message Button
+                          Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: ElevatedButton.icon(
+                              onPressed: () {
+                                showDialog(
+                                  context: context,
+                                  builder: (context) => AlertDialog(
+                                    title: const Text('New Message'),
+                                    content: StreamBuilder<QuerySnapshot>(
+                                      stream: FirebaseFirestore.instance
+                                          .collection('users')
+                                          .snapshots(),
+                                      builder: (context, snapshot) {
+                                        if (!snapshot.hasData) {
+                                          return const Center(
+                                            child: CircularProgressIndicator(),
+                                          );
+                                        }
+                                        final users = snapshot.data!.docs;
+                                        return SizedBox(
+                                          width: double.maxFinite,
+                                          child: ListView.builder(
+                                            shrinkWrap: true,
+                                            itemCount: users.length,
+                                            itemBuilder: (context, index) {
+                                              final user = users[index].data()
+                                                  as Map<String, dynamic>;
+                                              return ListTile(
+                                                leading: CircleAvatar(
+                                                  backgroundColor: const Color(0xff3E69FE)
+                                                      .withOpacity(0.1),
+                                                  child: Text(
+                                                    user['firstName']?[0] ?? '?',
+                                                    style: const TextStyle(
+                                                      color: Color(0xff3E69FE),
+                                                    ),
+                                                  ),
+                                                ),
+                                                title: Text(
+                                                    '${user['firstName']} ${user['lastName']}'),
+                                                subtitle: Text(user['role'] ?? ''),
+                                                onTap: () {
+                                                  Navigator.pop(context);
+                                                  _startNewConversation(
+                                                    users[index].id,
+                                                    '${user['firstName']} ${user['lastName']}',
+                                                  );
+                                                },
+                                              );
+                                            },
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  ),
+                                );
+                              },
+                              icon: const Icon(Icons.add),
+                              label: const Text('New Message'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xff3E69FE),
+                                minimumSize: const Size(double.infinity, 45),
+                              ),
+                            ),
+                          ),
+                          const Divider(),
+                          Expanded(
+                            child: _conversations.isEmpty
+                                ? Center(
+                                    child: Column(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        Icon(Icons.chat_bubble_outline,
+                                            size: 64,
+                                            color: Colors.grey.shade400),
+                                        const SizedBox(height: 16),
+                                        Text(
+                                          'No conversations yet',
+                                          style: TextStyle(
+                                            fontSize: 16,
+                                            color: Colors.grey.shade600,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  )
+                                : ListView.builder(
+                                    itemCount: _conversations.length,
+                                    itemBuilder: (context, index) {
+                                      final conversation = _conversations[index];
+                                      final otherParticipant = conversation[
+                                              'participantNames']
+                                          .firstWhere(
+                                              (name) =>
+                                                  name !=
+                                                  FirebaseAuth.instance.currentUser
+                                                      ?.displayName,
+                                              orElse: () => 'Unknown');
+                                      return ListTile(
+                                        selected: conversation['id'] == _selectedUserId,
+                                        selectedTileColor: const Color(0xff3E69FE)
+                                            .withOpacity(0.1),
+                                        leading: CircleAvatar(
+                                          backgroundColor: const Color(0xff3E69FE)
+                                              .withOpacity(0.1),
+                                          child: Text(
+                                            otherParticipant[0].toUpperCase(),
+                                            style: const TextStyle(
+                                              color: Color(0xff3E69FE),
+                                            ),
+                                          ),
+                                        ),
+                                        title: Text(otherParticipant),
+                                        subtitle: Text(
+                                          conversation['lastMessage'] ?? 'No messages yet',
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                        onTap: () {
+                                          setState(() {
+                                            _selectedUserId = conversation['id'];
+                                          });
+                                          _loadMessages(conversation['id']);
+                                        },
+                                      );
+                                    },
+                                  ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    // Messages Area
+                    Expanded(
+                      child: _selectedUserId == null
+                          ? Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(Icons.chat_bubble_outline,
+                                      size: 64, color: Colors.grey.shade400),
+                                  const SizedBox(height: 16),
+                                  Text(
+                                    'Select a conversation or start a new one',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      color: Colors.grey.shade600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            )
+                          : Column(
+                              children: [
+                                Expanded(
+                                  child: _messages.isEmpty
+                                      ? Center(
+                                          child: Column(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.center,
+                                            children: [
+                                              Icon(Icons.chat_bubble_outline,
+                                                  size: 64,
+                                                  color: Colors.grey.shade400),
+                                              const SizedBox(height: 16),
+                                              Text(
+                                                'No messages yet',
+                                                style: TextStyle(
+                                                  fontSize: 16,
+                                                  color: Colors.grey.shade600,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        )
+                                      : ListView.builder(
+                                          controller: _scrollController,
+                                          padding: const EdgeInsets.all(16),
+                                          itemCount: _messages.length,
+                                          itemBuilder: (context, index) {
+                                            final message = _messages[index];
+                                            final isMe = message['senderId'] ==
+                                                FirebaseAuth.instance.currentUser?.uid;
+                                            return Align(
+                                              alignment: isMe
+                                                  ? Alignment.centerRight
+                                                  : Alignment.centerLeft,
+                                              child: Container(
+                                                margin: const EdgeInsets.only(
+                                                    bottom: 8),
+                                                padding: const EdgeInsets.all(12),
+                                                decoration: BoxDecoration(
+                                                  color: isMe
+                                                      ? const Color(0xff3E69FE)
+                                                      : Colors.grey.shade200,
+                                                  borderRadius:
+                                                      BorderRadius.circular(12),
+                                                ),
+                                                child: Column(
+                                                  crossAxisAlignment: isMe
+                                                      ? CrossAxisAlignment.end
+                                                      : CrossAxisAlignment.start,
+                                                  children: [
+                                                    Text(
+                                                      message['text'],
+                                                      style: TextStyle(
+                                                        color: isMe
+                                                            ? Colors.white
+                                                            : Colors.black,
+                                                      ),
+                                                    ),
+                                                    const SizedBox(height: 4),
+                                                    Text(
+                                                      message['senderName'],
+                                                      style: TextStyle(
+                                                        fontSize: 12,
+                                                        color: isMe
+                                                            ? Colors.white70
+                                                            : Colors.grey.shade600,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            );
+                                          },
+                                        ),
+                                ),
+                                Container(
+                                  padding: const EdgeInsets.all(16),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.grey.withOpacity(0.1),
+                                        blurRadius: 4,
+                                        offset: const Offset(0, -2),
+                                      ),
+                                    ],
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Expanded(
+                                        child: TextField(
+                                          controller: _messageController,
+                                          decoration: InputDecoration(
+                                            hintText: 'Type a message...',
+                                            border: OutlineInputBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(24),
+                                              borderSide: BorderSide.none,
+                                            ),
+                                            filled: true,
+                                            fillColor: Colors.grey.shade100,
+                                            contentPadding:
+                                                const EdgeInsets.symmetric(
+                                                    horizontal: 20, vertical: 10),
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      CircleAvatar(
+                                        backgroundColor: const Color(0xff3E69FE),
+                                        child: IconButton(
+                                          icon: const Icon(Icons.send,
+                                              color: Colors.white),
+                                          onPressed: () =>
+                                              _sendMessage(_selectedUserId!),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                    ),
+                  ],
+                ),
     );
   }
 }
