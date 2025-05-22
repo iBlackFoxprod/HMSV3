@@ -2,21 +2,29 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'appointment_management.dart';
+import 'prescriptions_page.dart';
 
 class StaffDashboard extends StatelessWidget {
   const StaffDashboard({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final user = FirebaseAuth.instance.currentUser;
+    final staffName = user?.displayName ?? 'Staff';
     return Scaffold(
+      backgroundColor: const Color(0xFFFCFAEE),
       appBar: AppBar(
-        title: const Text('Staff Dashboard'),
-        backgroundColor: const Color(0xff3E69FE),
+        backgroundColor: Colors.white,
+        elevation: 0,
+        leading: Padding(
+          padding: const EdgeInsets.only(left: 8.0),
+          child: Image.asset('assets/images/logo.png', height: 48),
+        ),
+        title: const Text('', style: TextStyle(color: Colors.black)),
         actions: [
           IconButton(
-            icon: const Icon(Icons.logout),
+            icon: const Icon(Icons.logout, color: Color(0xFFB8001F)),
             onPressed: () {
-              // Optionally, sign out staff if needed.
               Navigator.pushReplacementNamed(context, '/login');
             },
           ),
@@ -24,105 +32,186 @@ class StaffDashboard extends StatelessWidget {
       ),
       body: SafeArea(
         child: ListView(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
           children: [
-            const Text(
-              'Welcome, Staff Member 👋',
-              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+            Row(
+              children: [
+                CircleAvatar(
+                  backgroundColor: const Color(0xFF507687),
+                  child: Icon(Icons.person, color: Colors.white, size: 28),
+                  radius: 28,
+                ),
+                const SizedBox(width: 16),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Hello,',
+                      style: TextStyle(fontSize: 18, color: Colors.grey.shade700),
+                    ),
+                    Text(
+                      staffName,
+                      style: const TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF384B70),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            const SizedBox(height: 28),
+            GridView.count(
+              crossAxisCount: 2,
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              mainAxisSpacing: 12,
+              crossAxisSpacing: 12,
+              childAspectRatio: 1.25,
+              children: [
+                _DashboardCard(
+                  icon: Icons.calendar_today,
+                  label: 'View Appointments',
+                  color: const Color(0xFFFDE7E7),
+                  iconColor: const Color(0xFFB8001F),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const AppointmentManagementPage()),
+                    );
+                  },
+                ),
+                _DashboardCard(
+                  icon: Icons.folder_shared,
+                  label: 'Patient Records',
+                  color: const Color(0xFFE7F0FD),
+                  iconColor: const Color(0xFF384B70),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const MedicalRecordPage()),
+                    );
+                  },
+                ),
+                _DashboardCard(
+                  icon: Icons.medical_services_outlined,
+                  label: 'Prescriptions',
+                  color: const Color(0xFFE7FDEB),
+                  iconColor: const Color(0xFF507687),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const PrescriptionsPage()),
+                    );
+                  },
+                ),
+                _DashboardCard(
+                  icon: Icons.chat_bubble_outline,
+                  label: 'Messages',
+                  color: const Color(0xFFFDE7E7),
+                  iconColor: const Color(0xFFB8001F),
+                  onTap: () {},
+                ),
+                _DashboardCard(
+                  icon: Icons.access_time,
+                  label: 'Attendance Clock',
+                  color: const Color(0xFFE7F0FD),
+                  iconColor: const Color(0xFF384B70),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const AttendanceClockPage()),
+                    );
+                  },
+                ),
+                _DashboardCard(
+                  icon: Icons.task_alt,
+                  label: 'Task List',
+                  color: const Color(0xFFE7FDEB),
+                  iconColor: const Color(0xFF507687),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const TaskListPage()),
+                    );
+                  },
+                ),
+                _DashboardCard(
+                  icon: Icons.schedule,
+                  label: 'Shift Management',
+                  color: const Color(0xFFFDE7E7),
+                  iconColor: const Color(0xFFB8001F),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const ShiftManagementPage()),
+                    );
+                  },
+                ),
+              ],
             ),
             const SizedBox(height: 24),
-
-            _buildDashboardTile(
-              context,
-              title: 'View Appointments',
-              icon: Icons.calendar_today,
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const AppointmentManagementPage()),
-                );
-              },
-            ),
-            _buildDashboardTile(
-              context,
-              title: 'Patient Records',
-              icon: Icons.folder_shared,
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const MedicalRecordPage()),
-                );
-              },
-            ),
-            _buildDashboardTile(
-              context,
-              title: 'Prescriptions',
-              icon: Icons.medical_services_outlined,
-              onTap: () {
-                // Add navigation
-              },
-            ),
-            _buildDashboardTile(
-              context,
-              title: 'Messages',
-              icon: Icons.chat_bubble_outline,
-              onTap: () {
-                // Add navigation
-              },
-            ),
-            _buildDashboardTile(
-              context,
-              title: 'Attendance Clock',
-              icon: Icons.access_time,
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const AttendanceClockPage()),
-                );
-              },
-            ),
-            _buildDashboardTile(
-              context,
-              title: 'Task List',
-              icon: Icons.task_alt,
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const TaskListPage()),
-                );
-              },
-            ),
-            _buildDashboardTile(
-              context,
-              title: 'Shift Management',
-              icon: Icons.schedule,
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const ShiftManagementPage()),
-                );
-              },
+            Center(
+              child: Text(
+                'Hospital Management System',
+                style: TextStyle(
+                  color: Colors.grey.shade500,
+                  fontWeight: FontWeight.w500,
+                  fontSize: 15,
+                  letterSpacing: 1.1,
+                ),
+              ),
             ),
           ],
         ),
       ),
     );
   }
+}
 
-  Widget _buildDashboardTile(BuildContext context,
-      {required String title,
-      required IconData icon,
-      required VoidCallback onTap}) {
-    return Card(
-      margin: const EdgeInsets.symmetric(vertical: 8),
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-        leading: Icon(icon, size: 28, color: const Color(0xff3E69FE)),
-        title: Text(title, style: const TextStyle(fontSize: 16)),
-        trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-        onTap: onTap,
+class _DashboardCard extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color color;
+  final Color iconColor;
+  final VoidCallback onTap;
+  const _DashboardCard({required this.icon, required this.label, required this.color, required this.iconColor, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        height: 90,
+        width: 90,
+        decoration: BoxDecoration(
+          color: color,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.08),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, color: iconColor, size: 28),
+            const SizedBox(height: 10),
+            Text(
+              label,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: iconColor,
+                fontWeight: FontWeight.w600,
+                fontSize: 13,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

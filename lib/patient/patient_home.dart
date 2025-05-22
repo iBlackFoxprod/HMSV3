@@ -243,8 +243,9 @@ class _PatientHomePageState extends State<PatientHomePage> {
     try {
       // First, try to fetch from Firestore
       final snapshot = await FirebaseFirestore.instance.collection('doctors').get();
+      List<Doctor> firestoreDoctors = [];
       if (snapshot.docs.isNotEmpty) {
-        final data = snapshot.docs.map((doc) {
+        firestoreDoctors = snapshot.docs.map((doc) {
           final data = doc.data();
           return Doctor(
             name: data['name'] ?? '',
@@ -254,45 +255,56 @@ class _PatientHomePageState extends State<PatientHomePage> {
             description: data['description'] ?? '',
           );
         }).toList();
-        
-        if (mounted) {
-          setState(() {
-            _topDoctors = data;
-            _loadingDoctors = false;
-          });
-        }
-      } else {
-        // If no doctors in Firestore, use default list
-        final defaultDoctors = [
-          Doctor(
-            name: 'Dr. Aloshy Saadaoui',
-            specialty: 'Pediatrician',
-            patients: '345+',
-            imagePath: 'assets/images/undraw_doctors_djoj.png',
-            description: 'Dr. Aloshy is a top pediatrician at Crist Hospital in London.',
-          ),
-          Doctor(
-            name: 'Dr. Salim Aït Benali',
-            specialty: 'Dermatologist',
-            patients: '290+',
-            imagePath: 'assets/images/undraw_doctors_djoj.png',
-            description: 'Dr. Salim specializes in skincare and dermatological treatments.',
-          ),
-          Doctor(
-            name: 'Dr. Charlotte Baker',
-            specialty: 'Cardiologist',
-            patients: '410+',
-            imagePath: 'assets/images/undraw_doctors_djoj.png',
-            description: 'Dr. Charlotte is a top heart specialist in London\'s Crist Hospital.',
-          ),
-        ];
-        
-        if (mounted) {
-          setState(() {
-            _topDoctors = defaultDoctors;
-            _loadingDoctors = false;
-          });
-        }
+      }
+      // Default/random doctors
+      final defaultDoctors = [
+        Doctor(
+          name: 'Dr. Aloshy Saadaoui',
+          specialty: 'Pediatrician',
+          patients: '345+',
+          imagePath: 'assets/images/undraw_doctors_djoj.png',
+          description: 'Dr. Aloshy is a top pediatrician at Crist Hospital in London.',
+        ),
+        Doctor(
+          name: 'Dr. Salim Aït Benali',
+          specialty: 'Dermatologist',
+          patients: '290+',
+          imagePath: 'assets/images/undraw_doctors_djoj.png',
+          description: 'Dr. Salim specializes in skincare and dermatological treatments.',
+        ),
+        Doctor(
+          name: 'Dr. Charlotte Baker',
+          specialty: 'Cardiologist',
+          patients: '410+',
+          imagePath: 'assets/images/undraw_doctors_djoj.png',
+          description: 'Dr. Charlotte is a top heart specialist in London\'s Crist Hospital.',
+        ),
+        Doctor(
+          name: 'Dr. Michael Reeve',
+          specialty: 'Orthopedic Surgeon',
+          patients: '320+',
+          imagePath: 'assets/images/undraw_doctors_djoj.png',
+          description: 'Dr. Michael specializes in joint replacement and sports injuries.',
+        ),
+        Doctor(
+          name: 'Dr. Sarah Johnson',
+          specialty: 'Neurologist',
+          patients: '280+',
+          imagePath: 'assets/images/undraw_doctors_djoj.png',
+          description: 'Dr. Sarah is an expert in neurological disorders and treatments.',
+        ),
+      ];
+      // Merge, avoiding duplicates by name
+      final allNames = firestoreDoctors.map((d) => d.name).toSet();
+      final mergedDoctors = [
+        ...firestoreDoctors,
+        ...defaultDoctors.where((d) => !allNames.contains(d.name)),
+      ];
+      if (mounted) {
+        setState(() {
+          _topDoctors = mergedDoctors;
+          _loadingDoctors = false;
+        });
       }
     } catch (e) {
       print('Firestore error in _fetchTopDoctors: $e');
@@ -510,7 +522,7 @@ class _DoctorCardModernEnhanced extends StatelessWidget {
   final Doctor doctor;
   const _DoctorCardModernEnhanced({required this.doctor});
 
-  Future<void> _bookAppointment(BuildContext context) async {
+  Future<void> _bookAppointment(BuildContext context, DateTime selectedDateTime) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -522,7 +534,7 @@ class _DoctorCardModernEnhanced extends StatelessWidget {
     final patientName = user.displayName ?? user.email ?? 'Unknown';
     final doctorName = doctor.name;
     final doctorSpecialty = doctor.specialty;
-    final date = DateTime.now();
+    final date = selectedDateTime;
     try {
       await FirebaseFirestore.instance.collection('appointments').add({
         'patientId': patientId,
@@ -547,25 +559,90 @@ class _DoctorCardModernEnhanced extends StatelessWidget {
   }
 
   void _showBookingDialog(BuildContext context) {
+    DateTime? selectedDate;
+    TimeOfDay? selectedTime;
+
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text('Book Appointment'),
-        content: Text('Book appointment with ${doctor.name}?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              Navigator.pop(ctx);
-              await _bookAppointment(context);
-            },
-            child: const Text('Book'),
-          ),
-        ],
-      ),
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (ctx, setState) {
+            String dateText = selectedDate == null
+                ? 'Pick a date'
+                : '${selectedDate!.year}-${selectedDate!.month.toString().padLeft(2, '0')}-${selectedDate!.day.toString().padLeft(2, '0')}';
+            String timeText = selectedTime == null
+                ? 'Pick a time'
+                : selectedTime!.format(ctx);
+            bool canBook = selectedDate != null && selectedTime != null;
+            return AlertDialog(
+              title: Text('Book Appointment'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text('Book appointment with ${doctor.name}'),
+                  const SizedBox(height: 16),
+                  ElevatedButton.icon(
+                    icon: const Icon(Icons.calendar_today),
+                    label: Text(dateText),
+                    onPressed: () async {
+                      final now = DateTime.now();
+                      final picked = await showDatePicker(
+                        context: ctx,
+                        initialDate: now,
+                        firstDate: now,
+                        lastDate: now.add(const Duration(days: 365)),
+                      );
+                      if (picked != null) {
+                        setState(() => selectedDate = picked);
+                      }
+                    },
+                  ),
+                  const SizedBox(height: 8),
+                  ElevatedButton.icon(
+                    icon: const Icon(Icons.access_time),
+                    label: Text(timeText),
+                    onPressed: () async {
+                      final picked = await showTimePicker(
+                        context: ctx,
+                        initialTime: TimeOfDay.now(),
+                      );
+                      if (picked != null) {
+                        setState(() => selectedTime = picked);
+                      }
+                    },
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: canBook ? const Color(0xff3E69FE) : Colors.grey.shade300,
+                    foregroundColor: Colors.white,
+                  ),
+                  onPressed: canBook
+                      ? () async {
+                          Navigator.pop(ctx);
+                          final selectedDateTime = DateTime(
+                            selectedDate!.year,
+                            selectedDate!.month,
+                            selectedDate!.day,
+                            selectedTime!.hour,
+                            selectedTime!.minute,
+                          );
+                          await _bookAppointment(context, selectedDateTime);
+                        }
+                      : null,
+                  child: const Text('Book'),
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
   }
 

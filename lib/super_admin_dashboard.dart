@@ -7,36 +7,121 @@ class SuperAdminDashboard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFFCFAEE),
       appBar: AppBar(
-        title: const Text('Super Admin Dashboard'),
-        backgroundColor: const Color(0xff3E69FE),
+        backgroundColor: Colors.white,
+        elevation: 0,
+        leading: Padding(
+          padding: const EdgeInsets.only(left: 8.0),
+          child: Image.asset('assets/images/logo.png', height: 48),
+        ),
+        title: const Text('', style: TextStyle(color: Colors.black)),
       ),
       body: ListView(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
         children: [
-          const Text(
-            'Welcome, Super Admin 👑',
-            style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+          Row(
+            children: [
+              CircleAvatar(
+                backgroundColor: const Color(0xFF507687),
+                child: Icon(Icons.admin_panel_settings, color: Colors.white, size: 28),
+                radius: 28,
+              ),
+              const SizedBox(width: 16),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: const [
+                  Text(
+                    'Hello,',
+                    style: TextStyle(fontSize: 18, color: Color(0xFF507687)),
+                  ),
+                  Text(
+                    'Super Admin',
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF384B70),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 28),
+          _SuperAdminCard(
+            icon: Icons.add_box,
+            label: 'Assign Shift',
+            color: const Color(0xFFFDE7E7),
+            iconColor: const Color(0xFFB8001F),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const AssignShiftPage()),
+              );
+            },
           ),
           const SizedBox(height: 24),
-          Card(
-            margin: const EdgeInsets.symmetric(vertical: 8),
-            elevation: 2,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            child: ListTile(
-              contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-              leading: const Icon(Icons.add_box, size: 28, color: Color(0xff3E69FE)),
-              title: const Text('Assign Shift', style: TextStyle(fontSize: 16)),
-              trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const AssignShiftPage()),
-                );
-              },
+          Center(
+            child: Text(
+              'Hospital Management System',
+              style: TextStyle(
+                color: Colors.grey.shade500,
+                fontWeight: FontWeight.w500,
+                fontSize: 15,
+                letterSpacing: 1.1,
+              ),
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _SuperAdminCard extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color color;
+  final Color iconColor;
+  final VoidCallback onTap;
+  const _SuperAdminCard({required this.icon, required this.label, required this.color, required this.iconColor, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        height: 110,
+        decoration: BoxDecoration(
+          color: color,
+          borderRadius: BorderRadius.circular(18),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.08),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            const SizedBox(width: 24),
+            Icon(icon, color: iconColor, size: 40),
+            const SizedBox(width: 24),
+            Expanded(
+              child: Text(
+                label,
+                style: TextStyle(
+                  color: iconColor,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 20,
+                ),
+              ),
+            ),
+            const Icon(Icons.arrow_forward_ios, size: 18, color: Color(0xFF384B70)),
+            const SizedBox(width: 18),
+          ],
+        ),
       ),
     );
   }
