@@ -18,7 +18,7 @@ class SuperAdminDashboard extends StatelessWidget {
       {
         'icon': Icons.apartment,
         'title': 'Department Management',
-        'desc': 'View and organize staff by department.',
+        'desc': 'Organize staff by department.',
         'onTap': () {
           Navigator.push(context, MaterialPageRoute(builder: (_) => const DepartmentManagementPage()));
         },
@@ -26,7 +26,7 @@ class SuperAdminDashboard extends StatelessWidget {
       {
         'icon': Icons.receipt_long,
         'title': 'Billing System',
-        'desc': 'Manage billing for patients and internal expenses.',
+        'desc': 'Manage patient & internal billing.',
         'onTap': () {
           Navigator.push(context, MaterialPageRoute(builder: (_) => const BillingSystemPage()));
         },
@@ -34,7 +34,7 @@ class SuperAdminDashboard extends StatelessWidget {
       {
         'icon': Icons.medical_services,
         'title': 'Storage Management',
-        'desc': 'Track medicine inventory and expiry.',
+        'desc': 'Track medicine inventory/expiry.',
         'onTap': () {
           Navigator.push(context, MaterialPageRoute(builder: (_) => const StorageManagementPage()));
         },
@@ -117,56 +117,95 @@ class SuperAdminDashboard extends StatelessWidget {
             crossAxisCount: 2,
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            mainAxisSpacing: 18,
-            crossAxisSpacing: 18,
-            childAspectRatio: 1.3,
-            children: features.map((feature) => GestureDetector(
-              onTap: feature['onTap'] as VoidCallback,
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(18),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.grey.withOpacity(0.08),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
+            mainAxisSpacing: 16,
+            crossAxisSpacing: 16,
+            childAspectRatio: 1.1,
+            children: features.map((feature) {
+              final title = feature['title'] as String;
+              final desc = feature['desc'] as String;
+              final bool applyFlexibleText = title == 'Department Management' || title == 'Storage Management';
+
+              return GestureDetector(
+                onTap: feature['onTap'] as VoidCallback,
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(18),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.grey.withOpacity(0.08),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: const Color(0xff3E69FE).withOpacity(0.08),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(feature['icon'] as IconData, color: const Color(0xff3E69FE), size: 28),
+                      ),
+                      const SizedBox(height: 10),
+                      applyFlexibleText
+                          ? Expanded(
+                              child: FittedBox(
+                                fit: BoxFit.scaleDown,
+                                alignment: Alignment.centerLeft,
+                                child: Text(
+                                  title,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                    color: Color(0xff3E69FE),
+                                  ),
+                                ),
+                              ),
+                            )
+                          : Text(
+                              title,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                                color: Color(0xff3E69FE),
+                              ),
+                            ),
+                      const SizedBox(height: 6),
+                      applyFlexibleText
+                          ? Expanded(
+                              child: FittedBox(
+                                fit: BoxFit.scaleDown,
+                                alignment: Alignment.centerLeft,
+                                child: Text(
+                                  desc,
+                                  style: TextStyle(
+                                    color: Colors.grey.shade700,
+                                    fontSize: 12,
+                                  ),
+                                  maxLines: 3,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            )
+                          : Text(
+                              desc,
+                              style: TextStyle(
+                                color: Colors.grey.shade700,
+                                fontSize: 12,
+                              ),
+                              maxLines: 3,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                    ],
+                  ),
                 ),
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: const Color(0xff3E69FE).withOpacity(0.08),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(feature['icon'] as IconData, color: const Color(0xff3E69FE), size: 32),
-                    ),
-                    const SizedBox(height: 18),
-                    Text(
-                      feature['title'] as String,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 18,
-                        color: Color(0xff3E69FE),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      feature['desc'] as String,
-                      style: TextStyle(
-                        color: Colors.grey.shade700,
-                        fontSize: 14,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            )).toList(),
+              );
+            }).toList(),
           ),
           const SizedBox(height: 32),
           Center(

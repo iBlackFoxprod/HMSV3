@@ -6,12 +6,17 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'billing_info.dart';
 import 'widgets/patient_bottom_nav_bar.dart';
 
+/* 
+// This main() function is likely for isolated testing of the PatientHomePage.
+// The main entry point for the application is in lib/main.dart.
+// To ensure AccessScreen appears first, run the app from lib/main.dart.
 void main() {
   runApp(const MaterialApp(
     debugShowCheckedModeBanner: false,
     home: PatientNavScreen(),
   ));
 }
+*/
 
 // ---------------------- doctor ------------------------
 class Doctor {
@@ -648,6 +653,49 @@ class _DoctorCardModernEnhanced extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    Widget imageWidget;
+    if (doctor.imagePath.isNotEmpty && doctor.imagePath.startsWith('assets/')) {
+      imageWidget = Image.asset(
+        doctor.imagePath,
+        width: 60,
+        height: 60,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) {
+          // Fallback for local asset load failure
+          return Image.network(
+            'https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?auto=format&fit=crop&w=60&h=60&q=80',
+            width: 60,
+            height: 60,
+            fit: BoxFit.cover,
+          );
+        },
+      );
+    } else if (doctor.imagePath.isNotEmpty && doctor.imagePath.startsWith('http')) {
+      imageWidget = Image.network(
+        doctor.imagePath,
+        width: 60,
+        height: 60,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) {
+          // Fallback for network image load failure
+          return Image.network(
+            'https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?auto=format&fit=crop&w=60&h=60&q=80',
+            width: 60,
+            height: 60,
+            fit: BoxFit.cover,
+          );
+        },
+      );
+    } else {
+      // Default placeholder if imagePath is empty or not a recognized format
+      imageWidget = Image.network(
+        'https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?auto=format&fit=crop&w=60&h=60&q=80',
+        width: 60,
+        height: 60,
+        fit: BoxFit.cover,
+      );
+    }
+
     return GestureDetector(
       onTap: () => _showBookingDialog(context),
       child: Container(
@@ -667,12 +715,7 @@ class _DoctorCardModernEnhanced extends StatelessWidget {
           contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
           leading: ClipRRect(
             borderRadius: BorderRadius.circular(12),
-            child: Image.asset(
-              doctor.imagePath,
-              width: 60,
-              height: 60,
-              fit: BoxFit.cover,
-            ),
+            child: imageWidget, // Use the dynamically chosen imageWidget
           ),
           title: Text(
             doctor.name,

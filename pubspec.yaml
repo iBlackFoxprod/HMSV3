@@ -88,6 +88,7 @@ flutter:
     - assets/images/logo.png
     - assets/images/undraw_doctors_djoj.png
     - assets/images/undraw_access_account_aydp.png
+    - assets/images/medicine.png
   
 
   # To add assets to your application, add an assets section, like this:
